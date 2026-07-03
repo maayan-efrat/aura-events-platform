@@ -1,0 +1,26 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+keys/*.pem
+
+# .NET build output
+[Bb]in/
+[Oo]bj/
+*.user
+
+# Docker
+docker-compose.override.yml
+
+# Node (future Next.js frontend)
+node_modules/
+.next/
+
+# Editor/OS
+.vs/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Claude Code local session state
+.claude/

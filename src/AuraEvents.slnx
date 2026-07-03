@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/services/">
+    <Project Path="services/Events.Api/Events.Api.csproj" />
+    <Project Path="services/Identity.Api/Identity.Api.csproj" />
+  </Folder>
+  <Folder Name="/shared/">
+    <Project Path="shared/AuraEvents.Shared/AuraEvents.Shared.csproj" />
+  </Folder>
+</Solution>
