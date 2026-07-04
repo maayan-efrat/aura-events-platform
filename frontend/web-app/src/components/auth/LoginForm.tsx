@@ -46,6 +46,7 @@ export function LoginForm() {
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5" aria-describedby={error ? "login-error" : undefined}>
       <Input
         label="אימייל"
+        name="email"
         type="email"
         autoComplete="email"
         required
@@ -54,6 +55,7 @@ export function LoginForm() {
       />
       <Input
         label="סיסמה"
+        name="password"
         type="password"
         autoComplete="current-password"
         required

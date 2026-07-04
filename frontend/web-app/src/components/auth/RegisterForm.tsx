@@ -46,6 +46,7 @@ export function RegisterForm() {
       <div className="grid grid-cols-2 gap-4">
         <Input
           label="שם פרטי"
+          name="given-name"
           autoComplete="given-name"
           required
           value={firstName}
@@ -53,6 +54,7 @@ export function RegisterForm() {
         />
         <Input
           label="שם משפחה"
+          name="family-name"
           autoComplete="family-name"
           required
           value={lastName}
@@ -62,6 +64,7 @@ export function RegisterForm() {
 
       <Input
         label="אימייל"
+        name="email"
         type="email"
         autoComplete="email"
         required
@@ -70,6 +73,7 @@ export function RegisterForm() {
       />
       <Input
         label="סיסמה"
+        name="new-password"
         type="password"
         autoComplete="new-password"
         minLength={8}
