@@ -361,6 +361,9 @@ public class EventsController(
         var status = @event.Status switch
         {
             EventStatus.Cancelled or EventStatus.Completed => "Closed",
+            // An event whose end time has passed is closed regardless of its stored Status —
+            // nothing currently transitions Published -> Completed automatically once it's over.
+            _ when @event.EndAtUtc <= DateTimeOffset.UtcNow => "Closed",
             _ when @event.Capacity is not null && registeredCount >= @event.Capacity => "Full",
             _ => "Open",
         };

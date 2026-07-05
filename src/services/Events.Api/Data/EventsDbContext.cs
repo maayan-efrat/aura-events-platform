@@ -10,6 +10,7 @@ public class EventsDbContext(DbContextOptions<EventsDbContext> options) : DbCont
     public DbSet<EventTrackingLog> EventTrackingLog => Set<EventTrackingLog>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<EventCategory> EventCategories => Set<EventCategory>();
+    public DbSet<AiRecommendationRequest> AiRecommendationRequests => Set<AiRecommendationRequest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -73,6 +74,15 @@ public class EventsDbContext(DbContextOptions<EventsDbContext> options) : DbCont
             entity.HasKey(ec => new { ec.EventId, ec.CategoryId });
             entity.HasOne(ec => ec.Event).WithMany(e => e.EventCategories).HasForeignKey(ec => ec.EventId);
             entity.HasOne(ec => ec.Category).WithMany(c => c.EventCategories).HasForeignKey(ec => ec.CategoryId);
+        });
+
+        modelBuilder.Entity<AiRecommendationRequest>(entity =>
+        {
+            entity.HasKey(r => r.Id);
+            entity.Property(r => r.Id).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(r => r.ResultsJson).HasColumnName("results").HasColumnType("jsonb");
+            entity.Property(r => r.CreatedAtUtc).HasDefaultValueSql("now()");
+            entity.HasIndex(r => new { r.UserId, r.CreatedAtUtc });
         });
     }
 }

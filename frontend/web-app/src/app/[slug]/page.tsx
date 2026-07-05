@@ -80,7 +80,12 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
             {availability.capacity ? ` / ${availability.capacity}` : ""} נרשמו
           </p>
         )}
-        <RegisterButton eventId={content.systemEventId} isLoggedIn={Boolean(user)} initialStatus={myRegistration} />
+        <RegisterButton
+          eventId={content.systemEventId}
+          isLoggedIn={Boolean(user)}
+          initialStatus={myRegistration}
+          isClosed={availability?.status === "Closed"}
+        />
       </div>
     </div>
   );

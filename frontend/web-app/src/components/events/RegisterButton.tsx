@@ -17,15 +17,24 @@ export function RegisterButton({
   eventId,
   isLoggedIn,
   initialStatus,
+  isClosed = false,
 }: {
   eventId: string;
   isLoggedIn: boolean;
   initialStatus: MyRegistration["status"] | null;
+  /** Registration window closed (event cancelled/completed/already over) — an existing registration still shows its ticket. */
+  isClosed?: boolean;
 }) {
   const router = useRouter();
   const [status, setStatus] = useState(initialStatus);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isActive = status === "Registered" || status === "Waitlisted" || status === "CheckedIn";
+
+  if (!isActive && isClosed) {
+    return <p className="text-sm font-medium text-muted-foreground">האירוע נסגר להרשמה.</p>;
+  }
 
   if (!isLoggedIn) {
     return (
@@ -34,8 +43,6 @@ export function RegisterButton({
       </Button>
     );
   }
-
-  const isActive = status === "Registered" || status === "Waitlisted" || status === "CheckedIn";
   const qrUrl = `/api/events/${eventId}/register/qr`;
 
   async function handleRegister() {

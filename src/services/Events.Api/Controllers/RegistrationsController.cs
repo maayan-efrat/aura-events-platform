@@ -31,7 +31,10 @@ public class RegistrationsController(
             return NotFound();
         }
 
-        if (@event.Status is EventStatus.Cancelled or EventStatus.Completed)
+        // The stored Status never auto-transitions to Completed once EndAtUtc passes, so check the
+        // actual clock too — otherwise a still-"Published" event stays registerable forever after
+        // it's already over.
+        if (@event.Status is EventStatus.Cancelled or EventStatus.Completed || @event.EndAtUtc <= DateTimeOffset.UtcNow)
         {
             return StatusCode(StatusCodes.Status410Gone,
                 new ErrorResponse(new ErrorBody("EVENT_CLOSED", "This event is no longer open for registration.")));

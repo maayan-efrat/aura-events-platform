@@ -109,6 +109,22 @@ export interface CreateEventResponse extends EventDetail {
   umbracoSyncError: string | null;
 }
 
+/** A single recommended event, as returned inline in both live results and history entries. */
+export interface RecommendedEvent {
+  eventId: string;
+  title: string;
+  startAtUtc: string;
+  reason: string;
+}
+
+/** GET /api/events/ai/recommendations/history response item shape (Events.Api). */
+export interface AiRecommendationHistoryEntry {
+  id: string;
+  preferences: string | null;
+  recommendations: RecommendedEvent[];
+  createdAtUtc: string;
+}
+
 /** PUT /api/events/{eventId} request body (Events.Api) — logistics only, not title/slug/content. */
 export interface UpdateEventPayload {
   startAtUtc: string;

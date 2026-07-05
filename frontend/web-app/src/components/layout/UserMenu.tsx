@@ -68,7 +68,7 @@ export function UserMenu({
             האירועים שלי
           </Link>
           {isOrganizer && (
-            <Link href="/organizer/new-event" role="menuitem" className={itemClassName} onClick={() => setIsOpen(false)}>
+            <Link href="/organizer/events" role="menuitem" className={itemClassName} onClick={() => setIsOpen(false)}>
               ניהול אירועים
             </Link>
           )}

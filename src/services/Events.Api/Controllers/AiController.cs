@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using Events.Api.Data;
 using Events.Api.Dtos;
 using Events.Api.Entities;
@@ -13,9 +14,10 @@ namespace Events.Api.Controllers;
 [ApiController]
 [Route("api/events/ai")]
 [Authorize]
-public class AiController(EventsDbContext db, IAuraAIService aiService) : ControllerBase
+public class AiController(EventsDbContext db, IAuraAIService aiService, ILogger<AiController> logger) : ControllerBase
 {
     private const int MaxCandidates = 20;
+    private const int MaxHistoryEntries = 10;
 
     [HttpPost("recommendations")]
     public async Task<ActionResult<RecommendationsResponse>> GetRecommendations(
@@ -90,7 +92,48 @@ public class AiController(EventsDbContext db, IAuraAIService aiService) : Contro
             .Take(maxResults)
             .ToList();
 
+        try
+        {
+            db.AiRecommendationRequests.Add(new AiRecommendationRequest
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Preferences = request.Preferences,
+                ResultsJson = JsonSerializer.Serialize(recommendations),
+                CreatedAtUtc = DateTimeOffset.UtcNow,
+            });
+            await db.SaveChangesAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            // Best-effort history — the recommendations themselves are already computed and must
+            // still reach the caller even if saving this request's history fails.
+            logger.LogError(ex, "Failed to save AI recommendation history for user {UserId}", userId);
+        }
+
         return Ok(new RecommendationsResponse(recommendations));
+    }
+
+    [HttpGet("recommendations/history")]
+    public async Task<ActionResult<List<AiRecommendationHistoryEntry>>> GetRecommendationsHistory(CancellationToken ct)
+    {
+        var userId = GetUserId();
+
+        var rows = await db.AiRecommendationRequests
+            .Where(r => r.UserId == userId)
+            .OrderByDescending(r => r.CreatedAtUtc)
+            .Take(MaxHistoryEntries)
+            .ToListAsync(ct);
+
+        var history = rows
+            .Select(r => new AiRecommendationHistoryEntry(
+                r.Id,
+                r.Preferences,
+                JsonSerializer.Deserialize<List<RecommendedEvent>>(r.ResultsJson) ?? [],
+                r.CreatedAtUtc))
+            .ToList();
+
+        return Ok(history);
     }
 
     [HttpPost("generate-description")]

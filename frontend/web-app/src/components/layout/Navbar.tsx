@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
   { href: "/#events", label: "אירועים" },
-  { href: "/dashboard#recommendations", label: "המלצות AI" },
+  { href: "/recommendations", label: "המלצות AI", isAi: true },
   { href: "/#about", label: "אודות" },
   { href: "/#contact", label: "צור קשר" },
 ];
@@ -39,8 +39,14 @@ export function Navbar() {
             <li key={link.href}>
               <a
                 href={link.href}
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className={cn(
+                  "inline-flex items-center gap-1 text-sm font-medium transition-colors",
+                  link.isAi
+                    ? "text-primary hover:text-primary-hover"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
               >
+                {link.isAi && <span aria-hidden="true">✨</span>}
                 {link.label}
               </a>
             </li>
@@ -98,8 +104,12 @@ export function Navbar() {
               <a
                 href={link.href}
                 onClick={() => setIsMenuOpen(false)}
-                className="block rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface-muted hover:text-foreground"
+                className={cn(
+                  "flex items-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-surface-muted",
+                  link.isAi ? "text-primary hover:text-primary-hover" : "text-muted-foreground hover:text-foreground",
+                )}
               >
+                {link.isAi && <span aria-hidden="true">✨</span>}
                 {link.label}
               </a>
             </li>
@@ -118,7 +128,7 @@ export function Navbar() {
               {isOrganizer && (
                 <li>
                   <Link
-                    href="/organizer/new-event"
+                    href="/organizer/events"
                     onClick={() => setIsMenuOpen(false)}
                     className="block rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface-muted hover:text-foreground"
                   >
