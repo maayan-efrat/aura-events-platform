@@ -31,6 +31,9 @@ services:
       # The mobile app's web dev target (expo start --web) runs on its own origin — CORS needs it
       # listed explicitly too, separate from the Next.js frontend above.
       Cors__AllowedOrigins__1: ${MOBILE_WEB_ORIGIN:-http://localhost:8081}
+      # Shared secret Events.Api presents on its internal bulk-user-lookup calls (organizer
+      # attendee list) — must match IdentityApi__SyncKey below.
+      UsersSync__SyncKey: ${USERS_SYNC_KEY:?USERS_SYNC_KEY must be set in .env}
     volumes:
       - ./keys:/keys:ro
     ports:
@@ -71,6 +74,10 @@ services:
       # Shared secret the Umbraco CMS process presents on its category-sync callbacks — must match
       # CategorySync__SyncKey below.
       CategorySync__SyncKey: ${CATEGORY_SYNC_KEY:?CATEGORY_SYNC_KEY must be set in .env}
+      # Organizer attendee list resolves UserIds into names/emails via Identity.Api's internal
+      # bulk-lookup endpoint — shared secret, not a user JWT (same pattern as CategorySync above).
+      IdentityApi__BaseUrl: http://identity-api:8080
+      IdentityApi__SyncKey: ${USERS_SYNC_KEY:?USERS_SYNC_KEY must be set in .env}
     volumes:
       - ./keys:/keys:ro
     ports:
@@ -79,6 +86,8 @@ services:
       postgres:
         condition: service_healthy
       umbraco:
+        condition: service_started
+      identity-api:
         condition: service_started
 
   umbraco:
@@ -95,6 +104,12 @@ services:
       # Where CategorySyncNotificationHandler pushes categoryItem publish/delete events.
       EventsApiSync__BaseUrl: http://events-api:8080
       EventsApiSync__SyncKey: ${CATEGORY_SYNC_KEY:?CATEGORY_SYNC_KEY must be set in .env}
+    volumes:
+      # Without this, every container recreation (including `docker compose up --build` on any
+      # other service, since compose re-resolves the whole dependency graph) wipes every uploaded
+      # media file — the Umbraco database still has the media item's metadata/URL, so it looks
+      # fine until someone actually requests the image and gets a 404.
+      - umbraco-media:/app/wwwroot/media
     ports:
       - "5003:8080"
     depends_on:
@@ -103,3 +118,4 @@ services:
 
 volumes:
   postgres-data:
+  umbraco-media:

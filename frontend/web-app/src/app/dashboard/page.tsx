@@ -52,7 +52,7 @@ export default async function DashboardPage() {
               <MyRegistrationRow
                 key={registration.registrationId}
                 eventId={registration.eventId}
-                title={titleByEventId.get(registration.eventId) ?? registration.eventId}
+                title={registration.eventTitle}
                 initialStatus={registration.status}
               />
             ))}
@@ -75,12 +75,20 @@ export default async function DashboardPage() {
                       {dateFormatter.format(new Date(event.startAtUtc))} · {STATUS_LABELS[event.status]}
                     </p>
                   </div>
-                  <Link
-                    href={`/organizer/events/${event.eventId}/edit`}
-                    className="text-sm font-semibold text-primary transition-colors hover:text-primary-hover"
-                  >
-                    עריכה
-                  </Link>
+                  <div className="flex items-center gap-4">
+                    <Link
+                      href={`/organizer/events/${event.eventId}/checkin`}
+                      className="text-sm font-semibold text-primary transition-colors hover:text-primary-hover"
+                    >
+                      צ׳ק-אין
+                    </Link>
+                    <Link
+                      href={`/organizer/events/${event.eventId}/edit`}
+                      className="text-sm font-semibold text-primary transition-colors hover:text-primary-hover"
+                    >
+                      עריכה
+                    </Link>
+                  </div>
                 </li>
               ))}
             </ul>

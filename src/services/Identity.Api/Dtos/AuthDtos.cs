@@ -29,3 +29,8 @@ public record UserProfileResponse(Guid UserId, string Email, string FirstName, s
 
 public record ErrorResponse(ErrorBody Error);
 public record ErrorBody(string Code, string Message);
+
+/// <summary>Events.Api's internal bulk-lookup request — resolves attendee UserIds into display info.</summary>
+public record BulkUsersRequest([Required] Guid[] UserIds);
+
+public record UserSummaryLite(Guid UserId, string Email, string FirstName, string LastName);

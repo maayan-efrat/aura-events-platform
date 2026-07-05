@@ -5,13 +5,22 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { CategoryTreePicker } from "@/components/dashboard/CategoryTreePicker";
+import { fileToBase64 } from "@/lib/files";
 import { SUPPORTED_TIMEZONES, utcIsoToZonedTimeValue, zonedTimeToUtcIso } from "@/lib/timezone";
 import type { Category, EventDetail, UpdateEventPayload } from "@/lib/types";
 
 const selectClassName =
   "h-11 rounded-xl border border-border bg-surface px-4 text-sm text-foreground focus-visible:border-primary";
 
-export function EditEventForm({ event, categories }: { event: EventDetail; categories: Category[] }) {
+export function EditEventForm({
+  event,
+  categories,
+  currentHeroImageUrl,
+}: {
+  event: EventDetail;
+  categories: Category[];
+  currentHeroImageUrl: string | null;
+}) {
   const router = useRouter();
 
   const [startLocal, setStartLocal] = useState(utcIsoToZonedTimeValue(event.startAtUtc, event.timezone));
@@ -27,6 +36,42 @@ export function EditEventForm({ event, categories }: { event: EventDetail; categ
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
+  const [heroImagePreviewUrl, setHeroImagePreviewUrl] = useState(currentHeroImageUrl);
+  const [isSavingImage, setIsSavingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [imageSaved, setImageSaved] = useState(false);
+
+  async function handleSaveImage() {
+    if (!heroImageFile) return;
+    setImageError(null);
+    setImageSaved(false);
+    setIsSavingImage(true);
+
+    try {
+      const response = await fetch(`/api/events/${event.eventId}/hero-image`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          heroImageBase64: await fileToBase64(heroImageFile),
+          heroImageFileName: heroImageFile.name,
+          heroImageContentType: heroImageFile.type || "application/octet-stream",
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setImageError(data.error?.message ?? "עדכון התמונה נכשל.");
+        return;
+      }
+      setImageSaved(true);
+      router.refresh();
+    } catch {
+      setImageError("לא ניתן היה להתחבר לשרת. נסו שוב מאוחר יותר.");
+    } finally {
+      setIsSavingImage(false);
+    }
+  }
 
   async function handleSubmit(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault();
@@ -69,6 +114,7 @@ export function EditEventForm({ event, categories }: { event: EventDetail; categ
   }
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-2xl border border-border p-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
@@ -155,5 +201,56 @@ export function EditEventForm({ event, categories }: { event: EventDetail; categ
         שמירת שינויים
       </Button>
     </form>
+
+    <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-border p-6">
+      <div>
+        <h2 className="text-sm font-semibold text-foreground">תמונה ראשית</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          התמונה מוצגת בעמוד האירוע וברשימת האירועים. שינוי כאן מפרסם מחדש את תוכן האירוע ב-Umbraco.
+        </p>
+      </div>
+
+      {heroImagePreviewUrl && (
+        // eslint-disable-next-line @next/next/no-img-element -- external Umbraco media URL, not a static asset
+        <img src={heroImagePreviewUrl} alt="תמונה ראשית נוכחית" className="h-40 w-full rounded-xl object-cover" />
+      )}
+
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="edit-hero-image" className="text-sm font-medium text-foreground">
+          החלפת תמונה
+        </label>
+        <input
+          id="edit-hero-image"
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files?.[0] ?? null;
+            setHeroImageFile(file);
+            setImageSaved(false);
+            if (file) setHeroImagePreviewUrl(URL.createObjectURL(file));
+          }}
+          className="text-sm text-foreground file:me-3 file:rounded-lg file:border-0 file:bg-primary/15 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-primary hover:file:bg-primary/25"
+        />
+      </div>
+
+      {imageError && (
+        <p role="alert" className="text-sm text-error">
+          {imageError}
+        </p>
+      )}
+      {imageSaved && <p className="text-sm text-success">התמונה עודכנה בהצלחה.</p>}
+
+      <Button
+        type="button"
+        variant="outline"
+        isLoading={isSavingImage}
+        disabled={!heroImageFile}
+        onClick={handleSaveImage}
+        className="self-start"
+      >
+        שמירת תמונה
+      </Button>
+    </div>
+    </>
   );
 }

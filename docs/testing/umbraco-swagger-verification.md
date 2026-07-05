@@ -161,3 +161,25 @@ environment even if someone passes the flag.
    should show `umbracoContentKey: null`.
 7. **Confirm the system isn't stuck**: the retry endpoint (Section 4.2) should succeed normally
    afterwards and create a **new** Umbraco node — it never tries to "resume" the deleted one.
+
+---
+
+## Addendum (2026-07-05): ticket QR media upload, verified against the live stack
+
+`UmbracoMediaService.cs` (`src/services/Events.Api/Services/Umbraco/UmbracoMediaService.cs`)
+archives each registration's ticket QR PNG into Umbraco's built-in "Image" media type. The two-step
+upload contract (`POST /temporary-file`, then `POST /media`) was inspected against the same cached
+live swagger spec used above, and then **actually exercised end-to-end** against the running dev
+stack (register for the seeded demo event via `POST /api/events/{eventId}/registrations`):
+
+- `POST /umbraco/management/api/v1/temporary-file` (multipart, client-supplied `Id` + `File`) →
+  `201`, empty body, same pattern as document create.
+- `GET /umbraco/management/api/v1/item/media-type/search?query=Image` → resolves the built-in
+  "Image" media type's key by matching `name == "Image"` (case-insensitive); cached in
+  `UmbracoImageMediaTypeResolver` for the process lifetime.
+- `POST /umbraco/management/api/v1/media` with body
+  `{ id, parent: null, mediaType: { id: <imageMediaTypeId> }, values: [{ alias: "umbracoFile", value: { temporaryFileId } }], variants: [{ culture: null, segment: null, name }] }`
+  → **confirmed `201`** on a real run (`docker compose logs events-api`:
+  `Umbraco media <guid> created for registration <guid>`). The previously-untyped guess for the
+  `umbracoFile` property's value shape (`{ temporaryFileId }`) was correct on the first live try —
+  no further bugs found here, unlike the document create/publish endpoints above.

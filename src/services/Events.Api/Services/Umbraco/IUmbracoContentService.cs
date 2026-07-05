@@ -26,4 +26,11 @@ public interface IUmbracoContentService
     /// mirrors it into Postgres, so there's still exactly one path that keeps Postgres in sync.
     /// </summary>
     Task<Guid> CreateAndPublishCategoryAsync(string name, Guid? parentId, CancellationToken ct);
+
+    /// <summary>
+    /// Replaces the "heroImage" property on an already-published eventPage and republishes.
+    /// Fetches the document's current values/variants first and resends them unchanged alongside
+    /// the new image — PUT /document/{id} is a full replace, so anything omitted would be wiped.
+    /// </summary>
+    Task UpdateHeroImageAsync(Guid documentId, byte[] imageBytes, string fileName, string contentType, CancellationToken ct);
 }

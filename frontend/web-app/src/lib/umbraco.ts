@@ -5,9 +5,10 @@ const UMBRACO_URL = process.env.UMBRACO_URL ?? "http://localhost:5003";
 /** Minimal shape we read off Umbraco Delivery API content items — see docs §3.1 for the full eventPage schema. */
 interface UmbracoContentItem {
   name: string;
-  // `route.path` collapses to "/" for content created directly under the content root when
-  // there's no distinct "home" document type (Umbraco can't tell it apart from the home page) —
-  // `route.startItem.path` is the item's own URL segment and is what we actually want as a slug.
+  // `route.path` is this item's own full route (e.g. "/auraevents-launch-night/") — what we want
+  // as a slug. `route.startItem.path` is NOT per-item: it's the shared domain/site root's own
+  // path ("events" for every single event here), verified directly against this project's running
+  // Umbraco instance — using it as the slug made every event card link to the same wrong URL.
   route: { path: string; startItem: { path: string } };
   properties: {
     systemEventId?: string;
@@ -53,7 +54,7 @@ export async function getPublishedEventContent(): Promise<UmbracoEventContent[]>
   return (data.items ?? [])
     .filter((item) => Boolean(item.properties.systemEventId))
     .map((item) => ({
-      slug: item.route.startItem.path,
+      slug: item.route.path.replace(/^\/|\/$/g, ""),
       title: item.name,
       summary: item.properties.summary ?? "",
       systemEventId: item.properties.systemEventId!,

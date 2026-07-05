@@ -8,21 +8,12 @@ import { Input } from "@/components/ui/Input";
 import { EventDescriptionGenerator } from "@/components/dashboard/EventDescriptionGenerator";
 import { CategoryTreePicker } from "@/components/dashboard/CategoryTreePicker";
 import { slugify } from "@/lib/slugify";
+import { fileToBase64 } from "@/lib/files";
 import { DEFAULT_TIMEZONE, SUPPORTED_TIMEZONES, zonedTimeToUtcIso } from "@/lib/timezone";
 import type { Category, CreateEventPayload, CreateEventResponse, EventContentPayload } from "@/lib/types";
 
 const selectClassName =
   "h-11 rounded-xl border border-border bg-surface px-4 text-sm text-foreground focus-visible:border-primary";
-
-/** Strips the "data:image/png;base64," prefix FileReader adds, leaving just the base64 payload. */
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve((reader.result as string).split(",")[1] ?? "");
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
 
 export function NewEventForm({ categories }: { categories: Category[] }) {
   const [title, setTitle] = useState("");
