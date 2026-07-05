@@ -20,7 +20,7 @@ export default async function TicketPage({ params }: { params: Promise<{ eventId
 
   const [event, registrationsResponse] = await Promise.all([
     getEventById(eventId).catch(() => null),
-    callEventsApiAsCurrentUser("/api/users/me/registrations"),
+    callEventsApiAsCurrentUser("/api/users/me/registrations").catch(() => null),
   ]);
   if (!event) notFound();
 
