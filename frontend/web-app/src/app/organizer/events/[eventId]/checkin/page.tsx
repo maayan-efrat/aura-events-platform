@@ -16,7 +16,7 @@ export default async function CheckInPage({ params }: { params: Promise<{ eventI
 
   const [event, attendeesResponse] = await Promise.all([
     getEventById(eventId).catch(() => null),
-    callEventsApiAsCurrentUser(`/api/events/${eventId}/attendees`),
+    callEventsApiAsCurrentUser(`/api/events/${eventId}/attendees`).catch(() => null),
   ]);
   if (!event) notFound();
 
