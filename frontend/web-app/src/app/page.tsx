@@ -25,6 +25,33 @@ export default function Home() {
         </Suspense>
       </section>
 
+      <section id="about" className="scroll-mt-20 border-t border-border bg-surface/40 px-4 py-20 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">אודות AuraEvents</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-pretty text-muted-foreground">
+            AuraEvents היא פלטפורמה לניהול אירועים המחברת בין מארגנים למשתתפים: תוכן עריכתי המתפרסם
+            ב-Umbraco, זמינות ומעקב הרשמות בזמן אמת, והמלצות אירועים מותאמות אישית מבוססות AI —
+            הכול במקום אחד.
+          </p>
+        </div>
+      </section>
+
+      <section id="contact" className="scroll-mt-20 border-t border-border px-4 py-20 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">צור קשר</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-pretty text-muted-foreground">
+            שאלות, פידבק או רעיונות לשיתוף פעולה? נשמח לשמוע מכם.
+          </p>
+          <a
+            href="mailto:hello@auraevents.local"
+            className="mt-4 inline-block text-lg font-semibold text-primary hover:text-primary-hover"
+            dir="ltr"
+          >
+            hello@auraevents.local
+          </a>
+        </div>
+      </section>
+
       <Footer />
     </div>
   );

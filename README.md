@@ -109,7 +109,7 @@ cp .env.example .env             # fill in real values
 openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out keys/jwt-private.pem
 openssl rsa -pubout -in keys/jwt-private.pem -out keys/jwt-public.pem
 
-docker compose up --build
+docker compose up --build postgres umbraco   # bring these two up first — see setup step below
 ```
 
 | Service | URL |
@@ -121,6 +121,20 @@ docker compose up --build
 
 Both `.NET` services run EF Core migrations on startup — the schema is created automatically on
 first boot, no manual migration step needed.
+
+#### One-time Umbraco setup (required before `events-api` can publish content)
+
+Events.Api creates and publishes `eventPage` content in Umbraco on the organizer's behalf when a
+new event is submitted (see [Event Authoring](#-roadmap--known-limitations)). This needs a
+dedicated Umbraco **API User** with client-credentials, which can only be created through the
+backoffice UI — there's a chicken-and-egg order to follow:
+
+1. `docker compose up --build postgres umbraco` (as above) and wait for the unattended install to finish.
+2. Open `http://localhost:5003/umbraco` and log in with `UMBRACO_ADMIN_EMAIL` / `UMBRACO_ADMIN_PASSWORD`.
+3. Go to **Settings → Users → Create → API User**. Name it something like "Events.Api Integration".
+4. Assign it a user group with **Create + Publish permissions on the content root** — without this, Events.Api's calls will get `403 Forbidden` even with a valid token.
+5. Open the new user's **Client Credentials** tab, generate a credential pair, and copy the Client Id / Client Secret into `.env` as `UMBRACO_MANAGEMENT_CLIENT_ID` / `UMBRACO_MANAGEMENT_CLIENT_SECRET`.
+6. `docker compose up --build` (now bring up everything else — `events-api` will pick up the real credentials).
 
 ### Frontend
 
@@ -157,7 +171,7 @@ Kept here deliberately, not swept under the rug:
 - **Umbraco's Postgres provider** (`Our.Umbraco.PostgreSql`) is a well-regarded **community** package, not officially maintained by Umbraco HQ. Two undocumented quirks it required: the connection string's provider name must be `Npgsql2` (not `Npgsql`), and `Umbraco:CMS:Global:UseHttps` must be explicitly `false` for the backoffice OAuth login to work over plain HTTP in local dev.
 - **Two transitive vulnerability warnings** (`Microsoft.OpenApi`, `SQLitePCLRaw`) from Umbraco.Cms's own dependency tree. Not exploitable via anything wired up here (SQLite isn't used; the flagged OpenAPI path is Umbraco's internal backoffice Swagger), but worth checking on each Umbraco patch release.
 - **AI recommendations personalize on limited signal** — titles, venue, and virtual/in-person flag (what Events.Api's own database holds). Richer personalization would mean pulling Umbraco's event summary/description too, deliberately deferred to avoid a live cross-service call on every recommendation request.
-- **Event authoring is split across two systems** — `POST /api/events` (Events.Api) creates the transactional record (dates, venue, capacity), and Umbraco's `eventPage` content type (auto-created on first boot, see `cms/AuraEvents.Umbraco/Composing/EventContentTypeComposer.cs`) holds the editorial copy, linked by `systemEventId`. The organizer "new event" page (`frontend/web-app/src/app/organizer/new-event`) currently only drives the AI copy step; wiring it to actually call both and publish is still manual.
+- **Event authoring spans two systems, now wired together** — `POST /api/events` (Events.Api) creates the transactional record (dates, venue, capacity), and Umbraco's `eventPage` content type (auto-created on first boot, see `cms/AuraEvents.Umbraco/Composing/EventContentTypeComposer.cs`) holds the editorial copy, linked by `systemEventId`. The organizer "new event" page (`frontend/web-app/src/app/organizer/new-event`) now drives both steps: it generates AI copy, then submits it together with the event's logistics; Events.Api creates the Postgres record and publishes the matching Umbraco content server-to-server via Umbraco's Management API (`Events.Api/Services/Umbraco`). The one remaining manual step is bootstrapping the Umbraco API User used for that machine-to-machine auth — see "One-time Umbraco setup" above. If the Umbraco publish step fails, the event still exists in Postgres with `umbracoContentKey: null` and a visible error with a "retry publish" action (`POST /api/events/{eventId}/umbraco-content`) — there's no distributed-transaction/saga machinery, which is a deliberate simplification for this project's scale.
 - **Mobile app is intentionally minimal** — plain React state for navigation (no router library), the QR code is a deterministic visual mockup (not a real scannable code), and there's no registration screen yet (only login) — new users must register via the web app first.
 - **No self-service role promotion** — `Organizer`/`Admin` roles can only be granted by inserting directly into `user_roles` in Postgres; there's no admin UI or endpoint for it yet.
 - **Dev-network TLS quirk (NetFree)**: if your network runs a filtering proxy that re-signs HTTPS (e.g. NetFree, common on Israeli ISPs), outbound calls from inside Docker containers (like Events.Api → OpenAI) will fail TLS chain validation even though the same call works fine from the host — the container doesn't trust the proxy's root CA the way Windows does. `src/services/Events.Api/Dockerfile` trusts `src/certs/netfree-ca-bundle.pem` to work around this locally. **This should not be needed in any real deployment** (staging/production networks don't route through a home filtering proxy) — if a future environment hits the same class of error, it means *that* network is intercepting TLS too, and the fix is to add *that* network's CA bundle, not to assume this one still applies. Safe to leave in the image either way: unused trusted roots are inert, they don't weaken anything.

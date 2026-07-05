@@ -51,7 +51,10 @@ public class AiController(EventsDbContext db, IAuraAIService aiService) : Contro
         var systemPrompt =
             "You are AuraEvents' event recommendation assistant. Recommend events strictly from the " +
             "candidate list provided — never invent an event. Personalize the 'reason' for each pick " +
-            "using the user's history and stated preferences. If nothing is genuinely relevant, return fewer items.";
+            "using the user's history and stated preferences. If nothing is genuinely relevant, return fewer items. " +
+            "Write each 'reason' in the same language the user wrote their stated preferences in — if they wrote " +
+            "in Hebrew, respond in Hebrew, not English. If no preferences were provided, default to Hebrew, since " +
+            "this product's UI is Hebrew-first.";
 
         var userPromptBuilder = new StringBuilder();
         userPromptBuilder.AppendLine($"Return at most {maxResults} recommendations.");
@@ -103,7 +106,10 @@ public class AiController(EventsDbContext db, IAuraAIService aiService) : Contro
         var systemPrompt =
             "You are AuraEvents' marketing copywriter. Turn an organizer's raw bullet points into a " +
             "polished, factual event description and SEO metadata. Do not invent facts, dates, prices, " +
-            "or speakers that were not mentioned in the bullets.";
+            "or speakers that were not mentioned in the bullets. Write the summary, description, seoTitle, " +
+            "and seoDescription in the same language the organizer used for the event title and bullet " +
+            "points below — if they wrote in Hebrew, respond entirely in Hebrew (including SEO fields), " +
+            "not English.";
 
         var tone = string.IsNullOrWhiteSpace(request.Tone) ? "professional and inviting" : request.Tone;
         var userPrompt =

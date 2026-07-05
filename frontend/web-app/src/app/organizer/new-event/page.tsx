@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/backend-fetch";
-import { EventDescriptionGenerator } from "@/components/dashboard/EventDescriptionGenerator";
+import { NewEventForm } from "@/components/dashboard/NewEventForm";
 
 export const metadata = { title: "יצירת אירוע — AuraEvents" };
 
@@ -15,15 +15,12 @@ export default async function NewEventPage() {
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <h1 className="text-3xl font-bold text-foreground">יצירת אירוע חדש</h1>
       <p className="mt-1 text-muted-foreground">
-        הזינו כמה נקודות גולמיות ותנו ל-AI לנסח תיאור שיווקי ומטא-דאטה ל-SEO.
-      </p>
-      <p className="mt-1 text-sm text-muted-foreground">
-        (בשלב זה התוכן מועתק ידנית לעורך התוכן של Umbraco — יצירת אירוע מלאה מתוך המסך הזה
-        תדרוש הוספת endpoint ייעודי ב-Events.Api.)
+        הזינו כמה נקודות גולמיות ותנו ל-AI לנסח תיאור שיווקי ומטא-דאטה ל-SEO, ואז מלאו את פרטי
+        האירוע — הכל ייווצר ויתפרסם יחד, ב-Postgres וב-Umbraco.
       </p>
 
       <div className="mt-8">
-        <EventDescriptionGenerator />
+        <NewEventForm />
       </div>
     </div>
   );

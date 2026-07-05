@@ -85,7 +85,7 @@ export async function EventListing() {
                   : "זמינות לא ידועה"}
               </span>
               <a
-                href={listing.slug}
+                href={`/${listing.slug}`}
                 className="text-sm font-semibold text-primary transition-colors hover:text-primary-hover"
               >
                 פרטים והרשמה ←
