@@ -12,8 +12,16 @@ interface UmbracoContentItem {
   properties: {
     systemEventId?: string;
     summary?: string;
-    heroImage?: unknown;
+    // MediaPicker3 delivered as an array (even for a single-image field) of resolved media items
+    // — verified against this project's own running instance: each entry's `url` is relative to
+    // the Umbraco origin (e.g. "/media/qkvnp54h/photo.png"), not the Next.js one.
+    heroImage?: Array<{ url: string }>;
   };
+}
+
+function resolveHeroImageUrl(heroImage?: Array<{ url: string }>): string | null {
+  const url = heroImage?.[0]?.url;
+  return url ? `${UMBRACO_URL}${url}` : null;
 }
 
 export interface UmbracoEventContent {
@@ -21,6 +29,7 @@ export interface UmbracoEventContent {
   title: string;
   summary: string;
   systemEventId: string;
+  heroImageUrl: string | null;
 }
 
 export interface UmbracoEventDetail extends UmbracoEventContent {
@@ -48,6 +57,7 @@ export async function getPublishedEventContent(): Promise<UmbracoEventContent[]>
       title: item.name,
       summary: item.properties.summary ?? "",
       systemEventId: item.properties.systemEventId!,
+      heroImageUrl: resolveHeroImageUrl(item.properties.heroImage),
     }));
 }
 
@@ -70,5 +80,6 @@ export async function getEventContentBySlug(slug: string): Promise<UmbracoEventD
     summary: item.properties.summary ?? "",
     description: item.properties.description ?? "",
     systemEventId: item.properties.systemEventId,
+    heroImageUrl: resolveHeroImageUrl(item.properties.heroImage),
   };
 }

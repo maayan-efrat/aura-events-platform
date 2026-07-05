@@ -8,6 +8,8 @@ public class EventsDbContext(DbContextOptions<EventsDbContext> options) : DbCont
     public DbSet<Event> Events => Set<Event>();
     public DbSet<EventRegistration> EventRegistrations => Set<EventRegistration>();
     public DbSet<EventTrackingLog> EventTrackingLog => Set<EventTrackingLog>();
+    public DbSet<Category> Categories => Set<Category>();
+    public DbSet<EventCategory> EventCategories => Set<EventCategory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -53,6 +55,22 @@ public class EventsDbContext(DbContextOptions<EventsDbContext> options) : DbCont
             entity.Property(t => t.OccurredAtUtc).HasDefaultValueSql("now()");
             entity.HasIndex(t => new { t.EventId, t.OccurredAtUtc });
             entity.HasIndex(t => new { t.UserId, t.OccurredAtUtc });
+        });
+
+        modelBuilder.Entity<Category>(entity =>
+        {
+            entity.HasKey(c => c.CategoryId);
+            entity.Property(c => c.Name).HasMaxLength(200).IsRequired();
+            entity.Property(c => c.UpdatedAtUtc).HasDefaultValueSql("now()");
+            entity.HasOne<Category>().WithMany().HasForeignKey(c => c.ParentId);
+            entity.HasIndex(c => c.ParentId);
+        });
+
+        modelBuilder.Entity<EventCategory>(entity =>
+        {
+            entity.HasKey(ec => new { ec.EventId, ec.CategoryId });
+            entity.HasOne(ec => ec.Event).WithMany(e => e.EventCategories).HasForeignKey(ec => ec.EventId);
+            entity.HasOne(ec => ec.Category).WithMany(c => c.EventCategories).HasForeignKey(ec => ec.CategoryId);
         });
     }
 }

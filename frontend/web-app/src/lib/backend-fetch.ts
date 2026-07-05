@@ -164,6 +164,20 @@ export async function getEventById(eventId: string) {
   return response.json() as Promise<import("@/lib/types").EventDetail>;
 }
 
+/** Flat category list (Umbraco's tree, reconstructed client-side via parentId) — used by the event-creation picker and the listing filter. */
+export async function getCategories() {
+  const response = await callEventsApiPublic("/api/categories", { next: { revalidate: 60 } });
+  return response.json() as Promise<import("@/lib/types").Category[]>;
+}
+
+/** Event ids matching a category, via Events.Api's fast Postgres join — no per-category Umbraco calls. */
+export async function getEventsByCategory(categoryId: string) {
+  const response = await callEventsApiPublic(`/api/events?categoryId=${encodeURIComponent(categoryId)}`, {
+    cache: "no-store",
+  });
+  return response.json() as Promise<import("@/lib/types").EventDetail[]>;
+}
+
 /**
  * Server Component-safe authenticated GET from Events.Api — no refresh-on-401 (Server
  * Components can't write cookies mid-render). Returns null on missing/expired session so the

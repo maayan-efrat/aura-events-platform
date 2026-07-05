@@ -8,4 +8,7 @@ public sealed class UmbracoOptions
     public required string ClientId { get; init; }
     public required string ClientSecret { get; init; }
     public required Guid EventPageDocumentTypeKey { get; init; }
+    public required Guid EventsRootFolderKey { get; init; }
+    public required Guid CategoryItemDocumentTypeKey { get; init; }
+    public required Guid CategoriesRootFolderKey { get; init; }
 }

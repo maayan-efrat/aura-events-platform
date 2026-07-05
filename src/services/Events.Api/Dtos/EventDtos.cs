@@ -6,7 +6,10 @@ public record EventContentRequest(
     [Required] string Summary,
     [Required] string Description,
     [Required] string SeoTitle,
-    [Required] string SeoDescription);
+    [Required] string SeoDescription,
+    string? HeroImageBase64 = null,
+    string? HeroImageFileName = null,
+    string? HeroImageContentType = null);
 
 public record CreateEventRequest(
     [Required] string Title,
@@ -20,7 +23,19 @@ public record CreateEventRequest(
     decimal? Price,
     string Status,
     Guid? UmbracoContentKey,
-    EventContentRequest? Content);
+    EventContentRequest? Content,
+    Guid[]? CategoryIds = null);
+
+public record UpdateEventRequest(
+    DateTimeOffset StartAtUtc,
+    DateTimeOffset EndAtUtc,
+    [Required] string Timezone,
+    string? VenueName,
+    bool IsVirtual,
+    int? Capacity,
+    decimal? Price,
+    string Status,
+    Guid[]? CategoryIds = null);
 
 public record EventResponse(
     Guid EventId,
@@ -35,6 +50,7 @@ public record EventResponse(
     int? Capacity,
     decimal? Price,
     string Status,
+    IReadOnlyList<CategoryRef> Categories,
     string? UmbracoSyncError = null);
 
 public record AvailabilityResponse(Guid EventId, int? Capacity, int RegisteredCount, int WaitlistCount, string Status);

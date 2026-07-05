@@ -6,19 +6,28 @@ import { Button, buttonVariants } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/Input";
 import { EventDescriptionGenerator } from "@/components/dashboard/EventDescriptionGenerator";
+import { CategoryTreePicker } from "@/components/dashboard/CategoryTreePicker";
 import { slugify } from "@/lib/slugify";
 import { DEFAULT_TIMEZONE, SUPPORTED_TIMEZONES, zonedTimeToUtcIso } from "@/lib/timezone";
-import type { CreateEventPayload, CreateEventResponse, EventContentPayload } from "@/lib/types";
+import type { Category, CreateEventPayload, CreateEventResponse, EventContentPayload } from "@/lib/types";
 
 const selectClassName =
   "h-11 rounded-xl border border-border bg-surface px-4 text-sm text-foreground focus-visible:border-primary";
 
-export function NewEventForm() {
+/** Strips the "data:image/png;base64," prefix FileReader adds, leaving just the base64 payload. */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve((reader.result as string).split(",")[1] ?? "");
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+export function NewEventForm({ categories }: { categories: Category[] }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState<EventContentPayload | null>(null);
 
-  const [slug, setSlug] = useState("");
-  const [slugTouched, setSlugTouched] = useState(false);
   const [startLocal, setStartLocal] = useState("");
   const [endLocal, setEndLocal] = useState("");
   const [timezone, setTimezone] = useState(DEFAULT_TIMEZONE);
@@ -26,6 +35,8 @@ export function NewEventForm() {
   const [isVirtual, setIsVirtual] = useState(false);
   const [capacity, setCapacity] = useState("");
   const [price, setPrice] = useState("");
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -34,12 +45,6 @@ export function NewEventForm() {
 
   function handleTitleChange(value: string) {
     setTitle(value);
-    if (!slugTouched) setSlug(slugify(value));
-  }
-
-  function handleSlugChange(value: string) {
-    setSlugTouched(true);
-    setSlug(value);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -53,17 +58,33 @@ export function NewEventForm() {
       setSubmitError("יש ליצור תוכן עם AI לפני יצירת האירוע.");
       return;
     }
-    if (!slug.trim() || !startLocal || !endLocal) {
-      setSubmitError("יש למלא את כל שדות החובה (Slug, תאריכי התחלה וסיום).");
+    if (!startLocal || !endLocal) {
+      setSubmitError("יש למלא את כל שדות החובה (תאריכי התחלה וסיום).");
       return;
     }
 
     setSubmitError(null);
     setIsSubmitting(true);
 
+    let contentWithImage = content;
+    if (heroImageFile) {
+      try {
+        contentWithImage = {
+          ...content,
+          heroImageBase64: await fileToBase64(heroImageFile),
+          heroImageFileName: heroImageFile.name,
+          heroImageContentType: heroImageFile.type || "application/octet-stream",
+        };
+      } catch {
+        setSubmitError("קריאת קובץ התמונה נכשלה. נסו קובץ אחר.");
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
     const payload: CreateEventPayload = {
       title,
-      slug,
+      slug: slugify(title),
       startAtUtc: zonedTimeToUtcIso(startLocal, timezone),
       endAtUtc: zonedTimeToUtcIso(endLocal, timezone),
       timezone,
@@ -73,7 +94,8 @@ export function NewEventForm() {
       price: price ? Number(price) : null,
       status: "Published",
       umbracoContentKey: null,
-      content,
+      content: contentWithImage,
+      categoryIds,
     };
 
     try {
@@ -149,8 +171,6 @@ export function NewEventForm() {
         <fieldset disabled={!content || Boolean(result)} className="flex flex-col gap-4 rounded-2xl border border-border p-6 disabled:opacity-50">
           <legend className="px-2 text-sm font-semibold text-foreground">פרטי האירוע</legend>
 
-          <Input label="Slug" required dir="ltr" value={slug} onChange={(event) => handleSlugChange(event.target.value)} />
-
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input
               label="תאריך ושעת התחלה"
@@ -212,6 +232,22 @@ export function NewEventForm() {
               onChange={(event) => setPrice(event.target.value)}
             />
           </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="hero-image" className="text-sm font-medium text-foreground">
+              תמונה ראשית (אופציונלי)
+            </label>
+            <input
+              id="hero-image"
+              type="file"
+              accept="image/*"
+              onChange={(event) => setHeroImageFile(event.target.files?.[0] ?? null)}
+              className="text-sm text-foreground file:me-3 file:rounded-lg file:border-0 file:bg-primary/15 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-primary hover:file:bg-primary/25"
+            />
+            {heroImageFile && <p className="text-xs text-muted-foreground">{heroImageFile.name}</p>}
+          </div>
+
+          <CategoryTreePicker categories={categories} selectedIds={categoryIds} onChange={setCategoryIds} />
         </fieldset>
 
         {result?.umbracoSyncError && (

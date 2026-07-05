@@ -1,9 +1,9 @@
 import { cn } from "@/lib/utils";
 
 /**
- * There's no real photo/media pipeline (no Umbraco media upload wired up) — this generates a
- * deterministic, on-brand gradient + icon per event instead, so every card still gets a distinct
- * "hero image" that matches the site's theme colors without needing an actual upload feature.
+ * Renders the organizer's uploaded hero image when one exists; otherwise falls back to a
+ * deterministic, on-brand gradient + icon per event, so every card still gets a distinct visual
+ * even for events created without a photo.
  */
 const GRADIENTS = [
   "from-primary/50 via-primary-glow/25 to-transparent",
@@ -22,7 +22,14 @@ function hashString(input: string): number {
   return Math.abs(hash);
 }
 
-export function EventCardVisual({ seed, className }: { seed: string; className?: string }) {
+export function EventCardVisual({ seed, imageUrl, className }: { seed: string; imageUrl?: string | null; className?: string }) {
+  if (imageUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- external Umbraco media origin, not in next.config's image domains
+      <img src={imageUrl} alt="" className={cn("object-cover", className)} />
+    );
+  }
+
   const hash = hashString(seed);
   const gradient = GRADIENTS[hash % GRADIENTS.length];
   const icon = ICONS[hash % ICONS.length];
