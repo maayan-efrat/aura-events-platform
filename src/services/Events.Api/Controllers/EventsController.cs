@@ -294,6 +294,56 @@ public class EventsController(
         return Ok(await ToResponseAsync(@event, ct));
     }
 
+    /// <summary>
+    /// Lets the organizer who created the event (or an Admin) replace its hero image after the
+    /// fact — unlike logistics fields above, this touches Umbraco (the image lives on the
+    /// eventPage document), so it requires the event to already be linked to published content.
+    /// </summary>
+    [HttpPut("{eventId:guid}/hero-image")]
+    [Authorize(Policy = "OrganizerOrAdmin")]
+    public async Task<IActionResult> UpdateHeroImage(Guid eventId, UpdateHeroImageRequest request, CancellationToken ct)
+    {
+        var @event = await db.Events.SingleOrDefaultAsync(e => e.EventId == eventId, ct);
+        if (@event is null)
+        {
+            return NotFound();
+        }
+
+        var currentUserId = Guid.Parse(User.FindFirstValue("sub")!);
+        if (@event.CreatedByUserId != currentUserId && !User.IsInRole("Admin"))
+        {
+            return Forbid();
+        }
+
+        if (@event.UmbracoContentKey is not { } documentId)
+        {
+            return Conflict(new ErrorResponse(new ErrorBody("CONTENT_NOT_PUBLISHED", "This event has no published content to attach an image to yet.")));
+        }
+
+        byte[] imageBytes;
+        try
+        {
+            imageBytes = Convert.FromBase64String(request.HeroImageBase64);
+        }
+        catch (FormatException)
+        {
+            return BadRequest(new ErrorResponse(new ErrorBody("VALIDATION_ERROR", "heroImageBase64 is not valid base64.")));
+        }
+
+        try
+        {
+            await umbracoContent.UpdateHeroImageAsync(documentId, imageBytes, request.HeroImageFileName, request.HeroImageContentType ?? "application/octet-stream", ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to update hero image for event {EventId}", eventId);
+            return StatusCode(StatusCodes.Status502BadGateway,
+                new ErrorResponse(new ErrorBody("UMBRACO_SYNC_FAILED", "עדכון התמונה ב-CMS נכשל. נסו שוב.")));
+        }
+
+        return Ok(await ToResponseAsync(@event, ct));
+    }
+
     [HttpGet("{eventId:guid}/availability")]
     public async Task<ActionResult<AvailabilityResponse>> GetAvailability(Guid eventId, CancellationToken ct)
     {

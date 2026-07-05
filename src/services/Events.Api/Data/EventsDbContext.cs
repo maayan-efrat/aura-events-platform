@@ -40,6 +40,8 @@ public class EventsDbContext(DbContextOptions<EventsDbContext> options) : DbCont
             entity.HasIndex(r => new { r.EventId, r.UserId }).IsUnique();
             entity.HasIndex(r => r.UserId);
             entity.HasIndex(r => new { r.EventId, r.Status });
+            entity.Property(r => r.TicketCode).HasMaxLength(64).IsRequired();
+            entity.HasIndex(r => r.TicketCode).IsUnique();
             entity.HasOne(r => r.Event).WithMany(e => e.Registrations).HasForeignKey(r => r.EventId);
             entity.ToTable(t => t.HasCheckConstraint(
                 "ck_event_registrations_status",

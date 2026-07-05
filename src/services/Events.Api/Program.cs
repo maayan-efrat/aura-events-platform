@@ -3,6 +3,7 @@ using Events.Api.Data;
 using Events.Api.Entities;
 using Events.Api.Services.AI;
 using Events.Api.Services.CategorySync;
+using Events.Api.Services.Qr;
 using Events.Api.Services.Umbraco;
 using Microsoft.EntityFrameworkCore;
 
@@ -30,11 +31,19 @@ builder.Services.AddSingleton(builder.Configuration.GetSection(UmbracoOptions.Se
 builder.Services.AddSingleton(builder.Configuration.GetSection(CategorySyncOptions.SectionName).Get<CategorySyncOptions>()
     ?? throw new InvalidOperationException($"Missing '{CategorySyncOptions.SectionName}' configuration section."));
 builder.Services.AddSingleton<UmbracoTokenProvider>();
+builder.Services.AddSingleton<UmbracoImageMediaTypeResolver>();
 builder.Services.AddHttpClient<IUmbracoContentService, UmbracoContentService>((sp, client) =>
 {
     var umbracoOptions = sp.GetRequiredService<UmbracoOptions>();
     client.BaseAddress = new Uri(umbracoOptions.BaseUrl);
 });
+builder.Services.AddHttpClient<IUmbracoMediaService, UmbracoMediaService>((sp, client) =>
+{
+    var umbracoOptions = sp.GetRequiredService<UmbracoOptions>();
+    client.BaseAddress = new Uri(umbracoOptions.BaseUrl);
+});
+
+builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
 
 builder.Services.AddCors(options =>
 {

@@ -214,6 +214,80 @@ public sealed class UmbracoContentService(
         }
     }
 
+    public async Task UpdateHeroImageAsync(Guid documentId, byte[] imageBytes, string fileName, string contentType, CancellationToken ct)
+    {
+        using var getRequest = await BuildRequestAsync(HttpMethod.Get, $"{DocumentEndpoint}/{documentId}", body: null, ct);
+        using var getResponse = await httpClient.SendAsync(getRequest, ct);
+        if (!getResponse.IsSuccessStatusCode)
+        {
+            var errorBody = await getResponse.Content.ReadAsStringAsync(ct);
+            logger.LogError("Fetching document {DocumentId} failed with {StatusCode}: {Body}", documentId, getResponse.StatusCode, errorBody);
+            throw new UmbracoPublishException($"Fetching document failed with status {getResponse.StatusCode}.");
+        }
+
+        var current = await getResponse.Content.ReadFromJsonAsync<DocumentGetResponse>(cancellationToken: ct)
+            ?? throw new InvalidOperationException("Umbraco document response was empty or unparseable.");
+
+        var mediaKey = await UploadHeroImageAsync(imageBytes, fileName, contentType, ct);
+
+        // Resend every existing value unchanged (dropping the GET-only "editorAlias" field the PUT
+        // model doesn't accept) except heroImage, which gets replaced with the new image.
+        var values = current.Values
+            .Where(v => v.Alias != "heroImage")
+            .Select(v => new { alias = v.Alias, culture = v.Culture, segment = v.Segment, value = v.Value })
+            .Append(new
+            {
+                alias = "heroImage",
+                culture = (string?)null,
+                segment = (string?)null,
+                value = (object?)new[]
+                {
+                    new { key = Guid.NewGuid(), mediaKey, mediaTypeAlias = "Image", crops = Array.Empty<object>(), focalPoint = (object?)null },
+                },
+            })
+            .ToArray();
+
+        var variants = current.Variants
+            .Select(v => new { culture = v.Culture, segment = v.Segment, name = v.Name })
+            .ToArray();
+
+        var updateBody = new { values, variants };
+
+        using var updateRequest = await BuildRequestAsync(HttpMethod.Put, $"{DocumentEndpoint}/{documentId}", updateBody, ct);
+        using var updateResponse = await httpClient.SendAsync(updateRequest, ct);
+        if (!updateResponse.IsSuccessStatusCode)
+        {
+            var body = await updateResponse.Content.ReadAsStringAsync(ct);
+            logger.LogError("Updating hero image on document {DocumentId} failed with {StatusCode}: {Body}", documentId, updateResponse.StatusCode, body);
+            throw new UmbracoPublishException($"Updating hero image failed with status {updateResponse.StatusCode}.");
+        }
+
+        var publishBody = new { publishSchedules = new[] { new { culture = (string?)null } } };
+        using var publishRequest = await BuildRequestAsync(HttpMethod.Put, $"{DocumentEndpoint}/{documentId}/publish", publishBody, ct);
+        using var publishResponse = await httpClient.SendAsync(publishRequest, ct);
+        if (!publishResponse.IsSuccessStatusCode)
+        {
+            var body = await publishResponse.Content.ReadAsStringAsync(ct);
+            logger.LogError("Re-publish after updating hero image on {DocumentId} failed with {StatusCode}: {Body}", documentId, publishResponse.StatusCode, body);
+            throw new UmbracoPublishException($"Re-publish after updating hero image failed with status {publishResponse.StatusCode}.");
+        }
+    }
+
+    private sealed record DocumentGetResponse(
+        [property: System.Text.Json.Serialization.JsonPropertyName("values")] DocumentGetValue[] Values,
+        [property: System.Text.Json.Serialization.JsonPropertyName("variants")] DocumentGetVariant[] Variants);
+
+    private sealed record DocumentGetValue(
+        [property: System.Text.Json.Serialization.JsonPropertyName("alias")] string Alias,
+        [property: System.Text.Json.Serialization.JsonPropertyName("culture")] string? Culture,
+        [property: System.Text.Json.Serialization.JsonPropertyName("segment")] string? Segment,
+        [property: System.Text.Json.Serialization.JsonPropertyName("value")] object? Value);
+
+    private sealed record DocumentGetVariant(
+        [property: System.Text.Json.Serialization.JsonPropertyName("culture")] string? Culture,
+        [property: System.Text.Json.Serialization.JsonPropertyName("segment")] string? Segment,
+        [property: System.Text.Json.Serialization.JsonPropertyName("name")] string Name);
+
     public async Task<Guid> CreateAndPublishCategoryAsync(string name, Guid? parentId, CancellationToken ct)
     {
         var documentId = Guid.NewGuid();

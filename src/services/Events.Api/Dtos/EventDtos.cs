@@ -37,6 +37,11 @@ public record UpdateEventRequest(
     string Status,
     Guid[]? CategoryIds = null);
 
+public record UpdateHeroImageRequest(
+    [Required] string HeroImageBase64,
+    [Required] string HeroImageFileName,
+    string? HeroImageContentType);
+
 public record EventResponse(
     Guid EventId,
     Guid? UmbracoContentKey,
@@ -55,13 +60,26 @@ public record EventResponse(
 
 public record AvailabilityResponse(Guid EventId, int? Capacity, int RegisteredCount, int WaitlistCount, string Status);
 
-public record RegistrationResponse(Guid RegistrationId, Guid EventId, string Status);
+public record RegistrationResponse(Guid RegistrationId, Guid EventId, string Status, string? QrSyncError = null);
 
-public record MyRegistrationResponse(Guid RegistrationId, Guid EventId, string Status, DateTimeOffset RegisteredAtUtc);
+public record MyRegistrationResponse(
+    Guid RegistrationId,
+    Guid EventId,
+    string EventTitle,
+    DateTimeOffset EventStartAtUtc,
+    DateTimeOffset EventEndAtUtc,
+    string EventTimezone,
+    string Status,
+    DateTimeOffset RegisteredAtUtc,
+    string TicketCode);
 
 public record CheckInRequest(Guid UserId);
 
+public record CheckInByTicketCodeRequest([Required] string TicketCode);
+
 public record CheckInResponse(Guid RegistrationId, string Status, DateTimeOffset CheckedInAtUtc);
+
+public record TicketManifestEntry(Guid RegistrationId, string TicketCode, Guid UserId, string Status);
 
 public record ErrorResponse(ErrorBody Error);
 public record ErrorBody(string Code, string Message);

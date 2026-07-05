@@ -2,25 +2,29 @@
 
 Basic Expo/React Native client: login against Identity.Api directly (no BFF — mobile apps have
 no XSS/DOM surface to defend, so the access + refresh tokens live in `expo-secure-store`
-instead of httpOnly cookies), a registered-events list from Events.Api, and a visual QR-code
-mockup for check-in.
+instead of httpOnly cookies), a registered-events list from Events.Api, and each ticket's real
+QR code (rendered by Events.Api, fetched via `GET /api/events/{eventId}/registrations/me/qr`).
 
 ## Structure
 
 ```
 mobile-app/
-├── App.tsx                    # session bootstrap + simple state-based screen switching
+├── App.tsx                    # session bootstrap + simple state-based screen switching,
+│                               # wraps every screen in the persistent AppHeader/AppFooter
 └── src/
     ├── lib/
     │   ├── config.ts          # API base URLs (EXPO_PUBLIC_* env vars)
     │   ├── auth.ts             # login/logout, SecureStore token persistence, refresh-on-401
     │   └── events.ts           # GET /api/users/me/registrations
-    ├── screens/
-    │   ├── LoginScreen.tsx
-    │   ├── EventsScreen.tsx
-    │   └── QrCodeScreen.tsx
-    └── components/
-        └── MockQrCode.tsx      # visual-only placeholder, not a scannable code
+    ├── components/
+    │   ├── AppHeader.tsx       # persistent top bar (brand + user greeting/logout)
+    │   └── AppFooter.tsx       # persistent bottom bar
+    └── screens/
+        ├── LoginScreen.tsx
+        ├── EventsScreen.tsx
+        └── QrCodeScreen.tsx    # fetches the ticket QR via authedFetch and renders it as a
+                                 # base64 data URI — <Image>'s `headers` option isn't honored by
+                                 # react-native-web, so a real fetch is what works on every target
 ```
 
 ## Running locally
@@ -37,7 +41,5 @@ Requires Identity.Api and Events.Api running (`docker compose up` from the repo 
 
 - Navigation is plain React state (no router library) — deliberately minimal for this scaffold.
   Reach for `expo-router` if the screen count grows.
-- `MockQrCode` is a deterministic-but-fake visual pattern, not a real scannable QR code. Swap in
-  `react-native-qrcode-svg` (encoding the registration ID) for a working check-in flow.
 - No RTL layout mirroring (`I18nManager.forceRTL`) yet — copy is in Hebrew but layout is LTR.
   Enabling RTL requires a native reload and is worth doing as a dedicated pass.

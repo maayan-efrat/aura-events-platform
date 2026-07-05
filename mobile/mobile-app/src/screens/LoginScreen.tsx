@@ -24,7 +24,6 @@ export function LoginScreen({ onLoggedIn }: { onLoggedIn: (user: AuraUser) => vo
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>AuraEvents</Text>
       <Text style={styles.subtitle}>התחברות</Text>
 
       <TextInput
@@ -75,7 +74,6 @@ export function LoginScreen({ onLoggedIn }: { onLoggedIn: (user: AuraUser) => vo
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", padding: 24, backgroundColor: "#09090b" },
-  title: { fontSize: 32, fontWeight: "800", color: "#fafafa", textAlign: "center" },
   subtitle: { fontSize: 16, color: "#a1a1aa", textAlign: "center", marginTop: 4, marginBottom: 32 },
   input: {
     height: 48,

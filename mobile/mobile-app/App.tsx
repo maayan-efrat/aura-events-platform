@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { AppHeader } from "./src/components/AppHeader";
+import { AppFooter } from "./src/components/AppFooter";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { EventsScreen } from "./src/screens/EventsScreen";
 import { QrCodeScreen } from "./src/screens/QrCodeScreen";
@@ -34,37 +36,29 @@ export default function App() {
     setScreen({ name: "events" });
   }
 
-  if (isRestoringSession) {
-    return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#09090b" }}>
-        <ActivityIndicator color="#8b5cf6" />
-        <StatusBar style="light" />
-      </View>
-    );
-  }
-
-  if (!user) {
-    return (
-      <>
-        <LoginScreen onLoggedIn={setUser} />
-        <StatusBar style="light" />
-      </>
-    );
-  }
-
   return (
-    <>
-      {screen.name === "events" && (
-        <EventsScreen
-          user={user}
-          onLogout={handleLogout}
-          onSelectRegistration={(registration) => setScreen({ name: "qr", registration })}
-        />
-      )}
-      {screen.name === "qr" && (
-        <QrCodeScreen registration={screen.registration} onBack={() => setScreen({ name: "events" })} />
-      )}
+    <View style={{ flex: 1, backgroundColor: "#09090b" }}>
+      <AppHeader user={user} onLogout={user ? handleLogout : undefined} />
+
+      <View style={{ flex: 1 }}>
+        {isRestoringSession && (
+          <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+            <ActivityIndicator color="#8b5cf6" />
+          </View>
+        )}
+
+        {!isRestoringSession && !user && <LoginScreen onLoggedIn={setUser} />}
+
+        {!isRestoringSession && user && screen.name === "events" && (
+          <EventsScreen user={user} onSelectRegistration={(registration) => setScreen({ name: "qr", registration })} />
+        )}
+        {!isRestoringSession && user && screen.name === "qr" && (
+          <QrCodeScreen registration={screen.registration} onBack={() => setScreen({ name: "events" })} />
+        )}
+      </View>
+
+      <AppFooter />
       <StatusBar style="light" />
-    </>
+    </View>
   );
 }
