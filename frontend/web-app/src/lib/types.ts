@@ -38,3 +38,31 @@ export interface MyRegistration {
   status: "Registered" | "Waitlisted" | "Cancelled" | "CheckedIn";
   registeredAtUtc: string;
 }
+
+/** POST /api/events/ai/generate-description response shape — also what gets published to Umbraco. */
+export interface EventContentPayload {
+  summary: string;
+  description: string;
+  seoTitle: string;
+  seoDescription: string;
+}
+
+/** POST /api/events request body (Events.Api). */
+export interface CreateEventPayload {
+  title: string;
+  slug: string;
+  startAtUtc: string;
+  endAtUtc: string;
+  timezone: string;
+  venueName: string | null;
+  isVirtual: boolean;
+  capacity: number | null;
+  status: "Draft" | "Published";
+  umbracoContentKey: string | null;
+  content: EventContentPayload | null;
+}
+
+/** POST /api/events / POST /api/events/{eventId}/umbraco-content response shape (Events.Api). */
+export interface CreateEventResponse extends EventDetail {
+  umbracoSyncError: string | null;
+}

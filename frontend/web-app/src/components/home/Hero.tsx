@@ -1,11 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
-import { Button } from "@/components/ui/Button";
+import { buttonVariants } from "@/components/ui/Button";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const TITLE_WORDS = ["עולם", "האירועים", "החכם", "שלך"];
 
 export function Hero() {
+  const { user } = useAuth();
+  const isAdmin = Boolean(user?.roles.includes("Admin"));
   const shouldReduceMotion = useReducedMotion();
   const transitionDuration = shouldReduceMotion ? 0 : 0.6;
 
@@ -81,10 +85,14 @@ export function Hero() {
           transition={{ duration: transitionDuration, delay: shouldReduceMotion ? 0 : 0.6 }}
           className="mt-10 flex flex-col gap-4 sm:flex-row"
         >
-          <Button size="lg">גלו אירועים קרובים</Button>
-          <Button variant="outline" size="lg">
-            אני מארגן/ת אירוע
-          </Button>
+          <a href="#events" className={buttonVariants({ size: "lg" })}>
+            גלו אירועים קרובים
+          </a>
+          {isAdmin && (
+            <Link href="/organizer/new-event" className={buttonVariants({ variant: "outline", size: "lg" })}>
+              אני מארגן/ת אירוע
+            </Link>
+          )}
         </motion.div>
       </div>
     </section>

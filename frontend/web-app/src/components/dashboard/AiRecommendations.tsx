@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/Card";
+import { RegisterButton } from "@/components/events/RegisterButton";
 
 interface Recommendation {
   eventId: string;
@@ -11,7 +13,7 @@ interface Recommendation {
   reason: string;
 }
 
-export function AiRecommendations() {
+export function AiRecommendations({ slugByEventId }: { slugByEventId: Record<string, string> }) {
   const [preferences, setPreferences] = useState("");
   const [recommendations, setRecommendations] = useState<Recommendation[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -69,20 +71,32 @@ export function AiRecommendations() {
 
       {recommendations && recommendations.length > 0 && (
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {recommendations.map((rec) => (
-            <li key={rec.eventId} className="list-none">
-              <Card>
-                <CardContent>
-                  <span className="inline-flex w-fit items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                    <span aria-hidden="true">✨</span>
-                    המלצת AI
-                  </span>
-                  <CardTitle>{rec.title}</CardTitle>
-                  <CardDescription>{rec.reason}</CardDescription>
-                </CardContent>
-              </Card>
-            </li>
-          ))}
+          {recommendations.map((rec) => {
+            const slug = slugByEventId[rec.eventId];
+            return (
+              <li key={rec.eventId} className="list-none">
+                <Card>
+                  <CardContent>
+                    <span className="inline-flex w-fit items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                      <span aria-hidden="true">✨</span>
+                      המלצת AI
+                    </span>
+                    {slug ? (
+                      <Link href={`/${slug}`} className="hover:text-primary">
+                        <CardTitle>{rec.title}</CardTitle>
+                      </Link>
+                    ) : (
+                      <CardTitle>{rec.title}</CardTitle>
+                    )}
+                    <CardDescription>{rec.reason}</CardDescription>
+                    <div className="mt-2">
+                      <RegisterButton eventId={rec.eventId} isLoggedIn initialStatus={null} />
+                    </div>
+                  </CardContent>
+                </Card>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

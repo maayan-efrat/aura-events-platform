@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
   { href: "/#events", label: "אירועים" },
-  { href: "/#recommendations", label: "המלצות AI" },
+  { href: "/dashboard#recommendations", label: "המלצות AI" },
   { href: "/#about", label: "אודות" },
   { href: "/#contact", label: "צור קשר" },
 ];
@@ -18,6 +18,7 @@ export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
   const { user, logout } = useAuth();
+  const isOrganizer = Boolean(user?.roles.includes("Organizer") || user?.roles.includes("Admin"));
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
@@ -48,6 +49,17 @@ export function Navbar() {
         <div className="hidden items-center gap-3 md:flex">
           {user ? (
             <>
+              <Link href="/dashboard" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+                האזור האישי
+              </Link>
+              {isOrganizer && (
+                <Link href="/organizer/new-event" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+                  ניהול אירועים
+                </Link>
+              )}
+              <Link href="/settings" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+                הגדרות
+              </Link>
               <span className="text-sm text-muted-foreground">שלום, {user.firstName}</span>
               <Button variant="outline" size="sm" onClick={() => logout()}>
                 התנתקות
@@ -107,6 +119,39 @@ export function Navbar() {
               </a>
             </li>
           ))}
+          {user && (
+            <>
+              <li>
+                <Link
+                  href="/dashboard"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface-muted hover:text-foreground"
+                >
+                  האזור האישי
+                </Link>
+              </li>
+              {isOrganizer && (
+                <li>
+                  <Link
+                    href="/organizer/new-event"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface-muted hover:text-foreground"
+                  >
+                    ניהול אירועים
+                  </Link>
+                </li>
+              )}
+              <li>
+                <Link
+                  href="/settings"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="block rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface-muted hover:text-foreground"
+                >
+                  הגדרות
+                </Link>
+              </li>
+            </>
+          )}
           <li className="mt-2 flex gap-3 px-3">
             {user ? (
               <Button

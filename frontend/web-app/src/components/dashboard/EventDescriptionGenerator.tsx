@@ -3,19 +3,21 @@
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import type { EventContentPayload } from "@/lib/types";
 
-interface GeneratedDescription {
-  summary: string;
-  description: string;
-  seoTitle: string;
-  seoDescription: string;
+interface EventDescriptionGeneratorProps {
+  title: string;
+  onTitleChange: (title: string) => void;
+  content: EventContentPayload | null;
+  onGenerated: (content: EventContentPayload) => void;
 }
 
-export function EventDescriptionGenerator() {
-  const [eventTitle, setEventTitle] = useState("");
+const textAreaClassName =
+  "rounded-xl border border-border bg-surface px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-primary";
+
+export function EventDescriptionGenerator({ title, onTitleChange, content, onGenerated }: EventDescriptionGeneratorProps) {
   const [bulletsText, setBulletsText] = useState("");
   const [tone, setTone] = useState("");
-  const [result, setResult] = useState<GeneratedDescription | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +35,7 @@ export function EventDescriptionGenerator() {
       const response = await fetch("/api/ai/generate-description", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventTitle, bullets, tone: tone || undefined }),
+        body: JSON.stringify({ eventTitle: title, bullets, tone: tone || undefined }),
       });
       const data = await response.json();
 
@@ -42,12 +44,17 @@ export function EventDescriptionGenerator() {
         return;
       }
 
-      setResult(data);
+      onGenerated(data as EventContentPayload);
     } catch {
       setError("לא ניתן להתחבר לשרת. נסו שוב מאוחר יותר.");
     } finally {
       setIsLoading(false);
     }
+  }
+
+  function updateField(field: keyof EventContentPayload, value: string) {
+    if (!content) return;
+    onGenerated({ ...content, [field]: value });
   }
 
   return (
@@ -56,8 +63,8 @@ export function EventDescriptionGenerator() {
         <Input
           label="שם האירוע"
           required
-          value={eventTitle}
-          onChange={(event) => setEventTitle(event.target.value)}
+          value={title}
+          onChange={(event) => onTitleChange(event.target.value)}
         />
 
         <div className="flex flex-col gap-1.5">
@@ -71,7 +78,7 @@ export function EventDescriptionGenerator() {
             value={bulletsText}
             onChange={(event) => setBulletsText(event.target.value)}
             placeholder={"לדוגמה:\nכנס בן יומיים\n20 הרצאות מובילי תעשייה\nסדנאות מעשיות"}
-            className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-primary"
+            className={textAreaClassName}
           />
         </div>
 
@@ -89,39 +96,62 @@ export function EventDescriptionGenerator() {
         )}
 
         <Button type="submit" isLoading={isLoading} className="mt-2">
-          יצירת תוכן עם AI
+          {content ? "צור מחדש עם AI" : "יצירת תוכן עם AI"}
         </Button>
       </form>
 
       <div className="rounded-2xl border border-dashed border-border p-6">
-        <h3 className="text-sm font-semibold text-muted-foreground">
-          תוכן שנוצר — להעתקה לשדות Umbraco
-        </h3>
+        <h3 className="text-sm font-semibold text-muted-foreground">תוכן שנוצר — ניתן לעריכה לפני פרסום</h3>
 
-        {!result ? (
+        {!content ? (
           <p className="mt-4 text-sm text-muted-foreground">
-            התוכן שייווצר יופיע כאן, מוכן להעתקה לשדות summary / description / seoTitle /
-            seoDescription בעורך התוכן של Umbraco.
+            התוכן שייווצר יופיע כאן, וניתן יהיה לערוך אותו לפני שהוא מתפרסם ב-Umbraco יחד עם
+            שאר פרטי האירוע.
           </p>
         ) : (
-          <dl className="mt-4 flex flex-col gap-4 text-sm">
-            <div>
-              <dt className="font-semibold text-foreground">תקציר (summary)</dt>
-              <dd className="mt-1 text-muted-foreground">{result.summary}</dd>
+          <div className="mt-4 flex flex-col gap-4 text-sm">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="summary" className="font-semibold text-foreground">
+                תקציר (summary)
+              </label>
+              <textarea
+                id="summary"
+                rows={2}
+                value={content.summary}
+                onChange={(event) => updateField("summary", event.target.value)}
+                className={textAreaClassName}
+              />
             </div>
-            <div>
-              <dt className="font-semibold text-foreground">תיאור מלא (description)</dt>
-              <dd className="mt-1 whitespace-pre-line text-muted-foreground">{result.description}</dd>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="description" className="font-semibold text-foreground">
+                תיאור מלא (description)
+              </label>
+              <textarea
+                id="description"
+                rows={5}
+                value={content.description}
+                onChange={(event) => updateField("description", event.target.value)}
+                className={textAreaClassName}
+              />
             </div>
-            <div>
-              <dt className="font-semibold text-foreground">כותרת SEO (seoTitle)</dt>
-              <dd className="mt-1 text-muted-foreground">{result.seoTitle}</dd>
+            <Input
+              label="כותרת SEO (seoTitle)"
+              value={content.seoTitle}
+              onChange={(event) => updateField("seoTitle", event.target.value)}
+            />
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="seoDescription" className="font-semibold text-foreground">
+                תיאור SEO (seoDescription)
+              </label>
+              <textarea
+                id="seoDescription"
+                rows={2}
+                value={content.seoDescription}
+                onChange={(event) => updateField("seoDescription", event.target.value)}
+                className={textAreaClassName}
+              />
             </div>
-            <div>
-              <dt className="font-semibold text-foreground">תיאור SEO (seoDescription)</dt>
-              <dd className="mt-1 text-muted-foreground">{result.seoDescription}</dd>
-            </div>
-          </dl>
+          </div>
         )}
       </div>
     </div>

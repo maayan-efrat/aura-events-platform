@@ -113,6 +113,34 @@ export async function callEventsApiAuthenticated(path: string, init: RequestInit
   return response;
 }
 
+/** Authenticated call to Identity.Api (e.g. updating the current user's profile). Same refresh-on-401 behavior as callEventsApiAuthenticated. */
+export async function callIdentityApiAuthenticated(path: string, init: RequestInit = {}): Promise<Response> {
+  let accessToken = await getAccessToken();
+  if (!accessToken) {
+    accessToken = (await refreshSession()) ?? undefined;
+  }
+  if (!accessToken) {
+    throw new BackendApiError(401, "UNAUTHENTICATED", "No active session.");
+  }
+
+  const doFetch = (token: string) =>
+    fetch(`${IDENTITY_API_URL}${path}`, {
+      ...init,
+      headers: { ...init.headers, Authorization: `Bearer ${token}` },
+    });
+
+  let response = await doFetch(accessToken);
+
+  if (response.status === 401) {
+    const refreshed = await refreshSession();
+    if (!refreshed) throw new BackendApiError(401, "UNAUTHENTICATED", "Session expired.");
+    response = await doFetch(refreshed);
+  }
+
+  if (!response.ok) await parseErrorAndThrow(response);
+  return response;
+}
+
 /** Public (unauthenticated) call to Events.Api — availability, etc. */
 export async function callEventsApiPublic(path: string, init?: RequestInit): Promise<Response> {
   const response = await fetch(`${EVENTS_API_URL}${path}`, init);
@@ -121,8 +149,10 @@ export async function callEventsApiPublic(path: string, init?: RequestInit): Pro
 }
 
 export async function getEventAvailability(eventId: string) {
+  // Registration counts change the instant a user registers/cancels — no caching, unlike the
+  // mostly-static event metadata below.
   const response = await callEventsApiPublic(`/api/events/${eventId}/availability`, {
-    next: { revalidate: 30 },
+    cache: "no-store",
   });
   return response.json() as Promise<import("@/lib/types").EventAvailability>;
 }

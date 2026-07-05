@@ -28,6 +28,9 @@ services:
       Jwt__PublicKeyPath: /keys/jwt-public.pem
       Jwt__PrivateKeyPath: /keys/jwt-private.pem
       Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN:-http://localhost:3000}
+      # The mobile app's web dev target (expo start --web) runs on its own origin — CORS needs it
+      # listed explicitly too, separate from the Next.js frontend above.
+      Cors__AllowedOrigins__1: ${MOBILE_WEB_ORIGIN:-http://localhost:8081}
     volumes:
       - ./keys:/keys:ro
     ports:
@@ -47,8 +50,14 @@ services:
       Jwt__Audience: ${JWT_AUDIENCE:-auraevents-clients}
       Jwt__PublicKeyPath: /keys/jwt-public.pem
       Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN:-http://localhost:3000}
+      Cors__AllowedOrigins__1: ${MOBILE_WEB_ORIGIN:-http://localhost:8081}
       OpenAI__ApiKey: ${OPENAI_API_KEY:?OPENAI_API_KEY must be set in .env}
       OpenAI__Model: ${OPENAI_MODEL:-gpt-4o-mini}
+      Umbraco__BaseUrl: http://umbraco:8080
+      Umbraco__ClientId: ${UMBRACO_MANAGEMENT_CLIENT_ID:?UMBRACO_MANAGEMENT_CLIENT_ID must be set in .env}
+      Umbraco__ClientSecret: ${UMBRACO_MANAGEMENT_CLIENT_SECRET:?UMBRACO_MANAGEMENT_CLIENT_SECRET must be set in .env}
+      # Must match EventPageDocumentTypeKey in cms/AuraEvents.Umbraco/Composing/EventContentTypeComposer.cs.
+      Umbraco__EventPageDocumentTypeKey: ${UMBRACO_EVENT_PAGE_DOCTYPE_KEY:-d2fa55b7-53fe-49b4-96dc-fdcb95bad0c4}
     volumes:
       - ./keys:/keys:ro
     ports:
@@ -56,6 +65,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      umbraco:
+        condition: service_started
 
   umbraco:
     build:

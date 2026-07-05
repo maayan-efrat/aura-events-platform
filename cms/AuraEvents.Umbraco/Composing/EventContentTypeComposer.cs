@@ -33,12 +33,17 @@ public class EnsureEventPageContentTypeHandler(
     // Matches the Events.Api record created for the "AuraEvents Launch Night" demo event.
     private const string DemoSystemEventId = "97cb325e-266f-41a9-9623-83bbecd5c361";
 
+    // Fixed so Events.Api can address this content type without a runtime lookup call — must
+    // match Umbraco:EventPageDocumentTypeKey in Events.Api's config (see docker-compose.yml).
+    private static readonly Guid EventPageDocumentTypeKey = Guid.Parse("d2fa55b7-53fe-49b4-96dc-fdcb95bad0c4");
+
     public async Task HandleAsync(UmbracoApplicationStartedNotification notification, CancellationToken cancellationToken)
     {
         if (contentTypeService.Get(Alias) is null)
         {
             var contentType = new ContentType(shortStringHelper, -1)
             {
+                Key = EventPageDocumentTypeKey,
                 Alias = Alias,
                 Name = "Event Page",
                 Icon = "icon-calendar",

@@ -5,7 +5,10 @@ const UMBRACO_URL = process.env.UMBRACO_URL ?? "http://localhost:5003";
 /** Minimal shape we read off Umbraco Delivery API content items — see docs §3.1 for the full eventPage schema. */
 interface UmbracoContentItem {
   name: string;
-  route: { path: string };
+  // `route.path` collapses to "/" for content created directly under the content root when
+  // there's no distinct "home" document type (Umbraco can't tell it apart from the home page) —
+  // `route.startItem.path` is the item's own URL segment and is what we actually want as a slug.
+  route: { path: string; startItem: { path: string } };
   properties: {
     systemEventId?: string;
     summary?: string;
@@ -25,9 +28,11 @@ export interface UmbracoEventDetail extends UmbracoEventContent {
 }
 
 export async function getPublishedEventContent(): Promise<UmbracoEventContent[]> {
+  // No caching: a newly-created event must show its real title immediately (dashboard, homepage),
+  // not a stale eventId fallback for up to a minute.
   const response = await fetch(
     `${UMBRACO_URL}/umbraco/delivery/api/v2/content?filter=contentType:eventPage`,
-    { next: { revalidate: 60 } },
+    { cache: "no-store" },
   );
 
   if (!response.ok) {
@@ -39,7 +44,7 @@ export async function getPublishedEventContent(): Promise<UmbracoEventContent[]>
   return (data.items ?? [])
     .filter((item) => Boolean(item.properties.systemEventId))
     .map((item) => ({
-      slug: item.route.path,
+      slug: item.route.startItem.path,
       title: item.name,
       summary: item.properties.summary ?? "",
       systemEventId: item.properties.systemEventId!,
@@ -60,7 +65,7 @@ export async function getEventContentBySlug(slug: string): Promise<UmbracoEventD
   if (!item.properties.systemEventId) return null;
 
   return {
-    slug: item.route.path,
+    slug: item.route.startItem.path,
     title: item.name,
     summary: item.properties.summary ?? "",
     description: item.properties.description ?? "",

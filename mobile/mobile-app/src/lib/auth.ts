@@ -1,4 +1,4 @@
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "./tokenStorage";
 import { IDENTITY_API_URL } from "./config";
 
 const ACCESS_TOKEN_KEY = "aura_access_token";
