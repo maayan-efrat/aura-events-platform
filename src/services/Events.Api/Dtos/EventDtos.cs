@@ -81,5 +81,14 @@ public record CheckInResponse(Guid RegistrationId, string Status, DateTimeOffset
 
 public record TicketManifestEntry(Guid RegistrationId, string TicketCode, Guid UserId, string Status);
 
+public record AttendeeResponse(
+    Guid RegistrationId,
+    Guid UserId,
+    string Name,
+    string Email,
+    string Status,
+    DateTimeOffset RegisteredAtUtc,
+    DateTimeOffset? CheckedInAtUtc);
+
 public record ErrorResponse(ErrorBody Error);
 public record ErrorBody(string Code, string Message);

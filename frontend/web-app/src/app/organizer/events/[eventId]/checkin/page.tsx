@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
-import { getCurrentUser, getEventById } from "@/lib/backend-fetch";
+import { callEventsApiAsCurrentUser, getCurrentUser, getEventById } from "@/lib/backend-fetch";
 import { CheckInForm } from "@/components/dashboard/CheckInForm";
+import { AttendeeList } from "@/components/dashboard/AttendeeList";
 
 export const metadata = { title: "צ׳ק-אין — AuraEvents" };
 
@@ -13,8 +14,13 @@ export default async function CheckInPage({ params }: { params: Promise<{ eventI
     redirect("/dashboard");
   }
 
-  const event = await getEventById(eventId).catch(() => null);
+  const [event, attendeesResponse] = await Promise.all([
+    getEventById(eventId).catch(() => null),
+    callEventsApiAsCurrentUser(`/api/events/${eventId}/attendees`),
+  ]);
   if (!event) notFound();
+
+  const attendees = attendeesResponse?.ok ? await attendeesResponse.json() : [];
 
   return (
     <div className="mx-auto max-w-lg px-4 py-12 sm:px-6">
@@ -26,6 +32,13 @@ export default async function CheckInPage({ params }: { params: Promise<{ eventI
 
       <div className="mt-8">
         <CheckInForm eventId={eventId} />
+      </div>
+
+      <div className="mt-10">
+        <h2 className="text-lg font-semibold text-foreground">נרשמים ({attendees.length})</h2>
+        <div className="mt-3">
+          <AttendeeList attendees={attendees} />
+        </div>
       </div>
     </div>
   );

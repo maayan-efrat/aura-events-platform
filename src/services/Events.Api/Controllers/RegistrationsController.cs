@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Events.Api.Data;
 using Events.Api.Dtos;
 using Events.Api.Entities;
+using Events.Api.Services.Identity;
 using Events.Api.Services.Qr;
 using Events.Api.Services.Umbraco;
 using Microsoft.AspNetCore.Authorization;
@@ -16,6 +17,7 @@ public class RegistrationsController(
     EventsDbContext db,
     IQrCodeService qrCodeService,
     IUmbracoMediaService umbracoMediaService,
+    IIdentityApiClient identityApiClient,
     ILogger<RegistrationsController> logger) : ControllerBase
 {
     [HttpPost("api/events/{eventId:guid}/registrations")]
@@ -192,6 +194,43 @@ public class RegistrationsController(
             .ToListAsync(ct);
 
         return Ok(manifest);
+    }
+
+    /// <summary>
+    /// Organizer-facing attendee list — resolves each registration's UserId into a display
+    /// name/email via Identity.Api (Events.Api itself only knows UserId). If Identity.Api is
+    /// unreachable, attendees still show up with their id as a fallback name rather than the
+    /// whole list failing.
+    /// </summary>
+    [HttpGet("api/events/{eventId:guid}/attendees")]
+    [Authorize(Policy = "OrganizerOrAdmin")]
+    public async Task<ActionResult<IEnumerable<AttendeeResponse>>> GetAttendees(Guid eventId, CancellationToken ct)
+    {
+        var registrations = await db.EventRegistrations
+            .Where(r => r.EventId == eventId && r.Status != RegistrationStatus.Cancelled)
+            .OrderBy(r => r.RegisteredAtUtc)
+            .ToListAsync(ct);
+
+        var userIds = registrations.Select(r => r.UserId).Distinct().ToList();
+
+        IReadOnlyList<UserSummaryLite> users;
+        try
+        {
+            users = await identityApiClient.GetUsersAsync(userIds, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to resolve attendee names for event {EventId}", eventId);
+            users = [];
+        }
+
+        var usersById = users.ToDictionary(u => u.UserId);
+
+        var attendees = registrations.Select(r => usersById.TryGetValue(r.UserId, out var user)
+            ? new AttendeeResponse(r.RegistrationId, r.UserId, $"{user.FirstName} {user.LastName}", user.Email, r.Status, r.RegisteredAtUtc, r.CheckedInAtUtc)
+            : new AttendeeResponse(r.RegistrationId, r.UserId, r.UserId.ToString(), "", r.Status, r.RegisteredAtUtc, r.CheckedInAtUtc));
+
+        return Ok(attendees);
     }
 
     [HttpPost("api/events/{eventId:guid}/checkin")]

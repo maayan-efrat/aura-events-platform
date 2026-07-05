@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -19,6 +20,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 /** Manual stand-in for a camera scanner: paste/type the ticket code shown under a ticket's QR. */
 export function CheckInForm({ eventId }: { eventId: string }) {
+  const router = useRouter();
   const [ticketCode, setTicketCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +45,7 @@ export function CheckInForm({ eventId }: { eventId: string }) {
       }
       setResult(data as CheckInResult);
       setTicketCode("");
+      router.refresh(); // re-fetches the server-rendered attendee list below
     } catch {
       setError("לא ניתן היה להתחבר לשרת. נסו שוב מאוחר יותר.");
     } finally {

@@ -3,6 +3,7 @@ using Events.Api.Data;
 using Events.Api.Entities;
 using Events.Api.Services.AI;
 using Events.Api.Services.CategorySync;
+using Events.Api.Services.Identity;
 using Events.Api.Services.Qr;
 using Events.Api.Services.Umbraco;
 using Microsoft.EntityFrameworkCore;
@@ -44,6 +45,14 @@ builder.Services.AddHttpClient<IUmbracoMediaService, UmbracoMediaService>((sp, c
 });
 
 builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
+
+builder.Services.AddSingleton(builder.Configuration.GetSection(IdentityApiOptions.SectionName).Get<IdentityApiOptions>()
+    ?? throw new InvalidOperationException($"Missing '{IdentityApiOptions.SectionName}' configuration section."));
+builder.Services.AddHttpClient<IIdentityApiClient, IdentityApiClient>((sp, client) =>
+{
+    var identityApiOptions = sp.GetRequiredService<IdentityApiOptions>();
+    client.BaseAddress = new Uri(identityApiOptions.BaseUrl);
+});
 
 builder.Services.AddCors(options =>
 {
