@@ -58,6 +58,19 @@ services:
       Umbraco__ClientSecret: ${UMBRACO_MANAGEMENT_CLIENT_SECRET:?UMBRACO_MANAGEMENT_CLIENT_SECRET must be set in .env}
       # Must match EventPageDocumentTypeKey in cms/AuraEvents.Umbraco/Composing/EventContentTypeComposer.cs.
       Umbraco__EventPageDocumentTypeKey: ${UMBRACO_EVENT_PAGE_DOCTYPE_KEY:-d2fa55b7-53fe-49b4-96dc-fdcb95bad0c4}
+      # Must match EventsRootFolderKey in cms/AuraEvents.Umbraco/Composing/EventContentTypeComposer.cs
+      # — the "Events" folder new eventPage documents get created under.
+      Umbraco__EventsRootFolderKey: ${UMBRACO_EVENTS_ROOT_FOLDER_KEY:-8a3c9f2d-1e6b-4d7a-8c5f-2b9e6a1d3f7c}
+      # Must match CategoryItemContentTypeKey in cms/AuraEvents.Umbraco/Composing/CategoryContentTypeComposer.cs.
+      Umbraco__CategoryItemDocumentTypeKey: ${UMBRACO_CATEGORY_ITEM_DOCTYPE_KEY:-b7f0a9d1-6e2b-4a3c-9e7d-6f5f9d8c1a2b}
+      # Must match CategoriesRootFolderKey in cms/AuraEvents.Umbraco/Composing/CategoryContentTypeComposer.cs
+      # — same environment-specific gotcha as EventPageDocumentTypeKey (see that comment above):
+      # only the default on a fresh database, override via UMBRACO_CATEGORIES_ROOT_FOLDER_KEY if
+      # the "Categories" folder was created before this key was fixed.
+      Umbraco__CategoriesRootFolderKey: ${UMBRACO_CATEGORIES_ROOT_FOLDER_KEY:-4d8b6e2a-7c1f-4b9d-8e3a-5f2c9d1b6a4e}
+      # Shared secret the Umbraco CMS process presents on its category-sync callbacks — must match
+      # CategorySync__SyncKey below.
+      CategorySync__SyncKey: ${CATEGORY_SYNC_KEY:?CATEGORY_SYNC_KEY must be set in .env}
     volumes:
       - ./keys:/keys:ro
     ports:
@@ -79,6 +92,9 @@ services:
       Umbraco__CMS__Unattended__UnattendedUserName: ${UMBRACO_ADMIN_NAME:-AuraEvents Admin}
       Umbraco__CMS__Unattended__UnattendedUserEmail: ${UMBRACO_ADMIN_EMAIL:?UMBRACO_ADMIN_EMAIL must be set in .env}
       Umbraco__CMS__Unattended__UnattendedUserPassword: ${UMBRACO_ADMIN_PASSWORD:?UMBRACO_ADMIN_PASSWORD must be set in .env}
+      # Where CategorySyncNotificationHandler pushes categoryItem publish/delete events.
+      EventsApiSync__BaseUrl: http://events-api:8080
+      EventsApiSync__SyncKey: ${CATEGORY_SYNC_KEY:?CATEGORY_SYNC_KEY must be set in .env}
     ports:
       - "5003:8080"
     depends_on:

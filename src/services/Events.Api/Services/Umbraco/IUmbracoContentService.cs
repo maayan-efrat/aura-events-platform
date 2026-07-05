@@ -17,4 +17,13 @@ public interface IUmbracoContentService
     /// persisting UmbracoContentKey in Postgres) failed to link, so it doesn't linger orphaned.
     /// </summary>
     Task DeleteEventPageAsync(Guid documentId, CancellationToken ct);
+
+    /// <summary>
+    /// Creates and publishes a "categoryItem" document in Umbraco — lets an organizer/admin add a
+    /// new category directly from the event-creation form rather than only via the backoffice.
+    /// Umbraco stays the source of truth for the tree either way: CategorySyncNotificationHandler
+    /// (in the CMS project) picks up this publish the same as any backoffice-created category and
+    /// mirrors it into Postgres, so there's still exactly one path that keeps Postgres in sync.
+    /// </summary>
+    Task<Guid> CreateAndPublishCategoryAsync(string name, Guid? parentId, CancellationToken ct);
 }

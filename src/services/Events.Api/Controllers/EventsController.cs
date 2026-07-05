@@ -41,6 +41,16 @@ public class EventsController(
             return Conflict(new ErrorResponse(new ErrorBody("SLUG_ALREADY_EXISTS", "An event with this slug already exists.")));
         }
 
+        var categoryIds = request.CategoryIds ?? [];
+        var validCategoryIds = await db.Categories
+            .Where(c => c.IsActive && categoryIds.Contains(c.CategoryId))
+            .Select(c => c.CategoryId)
+            .ToListAsync(ct);
+        if (validCategoryIds.Count != categoryIds.Distinct().Count())
+        {
+            return BadRequest(new ErrorResponse(new ErrorBody("VALIDATION_ERROR", "One or more categoryIds are unknown or inactive.")));
+        }
+
         var @event = new Event
         {
             EventId = Guid.NewGuid(),
@@ -60,11 +70,16 @@ public class EventsController(
         };
 
         db.Events.Add(@event);
+        foreach (var categoryId in validCategoryIds)
+        {
+            db.EventCategories.Add(new EventCategory { EventId = @event.EventId, CategoryId = categoryId });
+        }
+
         await db.SaveChangesAsync(ct);
 
         if (request.Content is null)
         {
-            return CreatedAtAction(nameof(GetAvailability), new { eventId = @event.EventId }, ToResponse(@event));
+            return CreatedAtAction(nameof(GetAvailability), new { eventId = @event.EventId }, await ToResponseAsync(@event, ct));
         }
 
         var response = await CreateAndLinkUmbracoContentAsync(@event, request.Content, simulateDbFailureAfterUmbracoPublish, ct);
@@ -118,7 +133,7 @@ public class EventsController(
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to create/publish Umbraco content for event {EventId}", @event.EventId);
-            return ToResponse(@event) with { UmbracoSyncError = UmbracoSyncFailedMessage };
+            return (await ToResponseAsync(@event, ct)) with { UmbracoSyncError = UmbracoSyncFailedMessage };
         }
 
         try
@@ -135,7 +150,7 @@ public class EventsController(
 
             @event.UmbracoContentKey = umbracoContentKey;
             await db.SaveChangesAsync(ct);
-            return ToResponse(@event);
+            return await ToResponseAsync(@event, ct);
         }
         catch (Exception ex)
         {
@@ -155,8 +170,58 @@ public class EventsController(
                     umbracoContentKey, @event.EventId);
             }
 
-            return ToResponse(@event) with { UmbracoSyncError = UmbracoSyncFailedMessage };
+            return (await ToResponseAsync(@event, ct)) with { UmbracoSyncError = UmbracoSyncFailedMessage };
         }
+    }
+
+    /// <summary>
+    /// Fast category filter for the public listing page: a single Postgres join over
+    /// event_categories rather than a per-category call out to Umbraco — see the category-sync
+    /// design rationale on <see cref="Entities.Category"/>.
+    /// </summary>
+    [HttpGet]
+    public async Task<ActionResult<List<EventResponse>>> GetEvents([FromQuery] Guid? categoryId, CancellationToken ct)
+    {
+        var eventsQuery = db.Events.AsQueryable();
+        if (categoryId is not null)
+        {
+            eventsQuery = eventsQuery.Where(e => e.EventCategories.Any(ec => ec.CategoryId == categoryId));
+        }
+
+        var events = await eventsQuery.ToListAsync(ct);
+        var eventIds = events.Select(e => e.EventId).ToList();
+
+        var categoriesByEvent = (await db.EventCategories
+            .Where(ec => eventIds.Contains(ec.EventId))
+            .Select(ec => new { ec.EventId, Category = new CategoryRef(ec.CategoryId, ec.Category.Name) })
+            .ToListAsync(ct))
+            .ToLookup(x => x.EventId, x => x.Category);
+
+        var responses = events.Select(e => new EventResponse(
+            e.EventId, e.UmbracoContentKey, e.Slug, e.Title, e.StartAtUtc, e.EndAtUtc, e.Timezone,
+            e.VenueName, e.IsVirtual, e.Capacity, e.Price, e.Status, categoriesByEvent[e.EventId].ToList())).ToList();
+
+        return Ok(responses);
+    }
+
+    /// <summary>Events the current user created — powers the "my events" edit list on the dashboard.</summary>
+    [HttpGet("/api/users/me/events")]
+    [Authorize(Policy = "OrganizerOrAdmin")]
+    public async Task<ActionResult<List<EventResponse>>> GetMyEvents(CancellationToken ct)
+    {
+        var currentUserId = Guid.Parse(User.FindFirstValue("sub")!);
+        var events = await db.Events
+            .Where(e => e.CreatedByUserId == currentUserId)
+            .OrderByDescending(e => e.CreatedAtUtc)
+            .ToListAsync(ct);
+
+        var responses = new List<EventResponse>();
+        foreach (var e in events)
+        {
+            responses.Add(await ToResponseAsync(e, ct));
+        }
+
+        return Ok(responses);
     }
 
     [HttpGet("{eventId:guid}")]
@@ -168,7 +233,65 @@ public class EventsController(
             return NotFound();
         }
 
-        return Ok(ToResponse(@event));
+        return Ok(await ToResponseAsync(@event, ct));
+    }
+
+    /// <summary>
+    /// Lets the organizer who created the event (or an Admin) edit its logistics — dates, venue,
+    /// capacity, price, status, categories. Title/slug/editorial content are Umbraco's domain
+    /// (see docs/architecture/01-system-architecture.md §3.1) and aren't editable here.
+    /// </summary>
+    [HttpPut("{eventId:guid}")]
+    [Authorize(Policy = "OrganizerOrAdmin")]
+    public async Task<ActionResult<EventResponse>> UpdateEvent(Guid eventId, UpdateEventRequest request, CancellationToken ct)
+    {
+        var @event = await db.Events.SingleOrDefaultAsync(e => e.EventId == eventId, ct);
+        if (@event is null)
+        {
+            return NotFound();
+        }
+
+        var currentUserId = Guid.Parse(User.FindFirstValue("sub")!);
+        if (@event.CreatedByUserId != currentUserId && !User.IsInRole("Admin"))
+        {
+            return Forbid();
+        }
+
+        var status = string.IsNullOrWhiteSpace(request.Status) ? @event.Status : request.Status;
+        if (!ValidStatuses.Contains(status))
+        {
+            return BadRequest(new ErrorResponse(new ErrorBody("VALIDATION_ERROR", $"Status must be one of: {string.Join(", ", ValidStatuses)}.")));
+        }
+
+        var categoryIds = request.CategoryIds ?? [];
+        var validCategoryIds = await db.Categories
+            .Where(c => c.IsActive && categoryIds.Contains(c.CategoryId))
+            .Select(c => c.CategoryId)
+            .ToListAsync(ct);
+        if (validCategoryIds.Count != categoryIds.Distinct().Count())
+        {
+            return BadRequest(new ErrorResponse(new ErrorBody("VALIDATION_ERROR", "One or more categoryIds are unknown or inactive.")));
+        }
+
+        @event.StartAtUtc = request.StartAtUtc;
+        @event.EndAtUtc = request.EndAtUtc;
+        @event.Timezone = request.Timezone;
+        @event.VenueName = request.VenueName;
+        @event.IsVirtual = request.IsVirtual;
+        @event.Capacity = request.Capacity;
+        @event.Price = request.Price;
+        @event.Status = status;
+        @event.UpdatedAtUtc = DateTimeOffset.UtcNow;
+
+        var existingLinks = await db.EventCategories.Where(ec => ec.EventId == eventId).ToListAsync(ct);
+        db.EventCategories.RemoveRange(existingLinks);
+        foreach (var categoryId in validCategoryIds)
+        {
+            db.EventCategories.Add(new EventCategory { EventId = eventId, CategoryId = categoryId });
+        }
+
+        await db.SaveChangesAsync(ct);
+        return Ok(await ToResponseAsync(@event, ct));
     }
 
     [HttpGet("{eventId:guid}/availability")]
@@ -195,8 +318,16 @@ public class EventsController(
         return Ok(new AvailabilityResponse(@event.EventId, @event.Capacity, registeredCount, waitlistCount, status));
     }
 
-    private static EventResponse ToResponse(Event @event) => new(
-        @event.EventId, @event.UmbracoContentKey, @event.Slug, @event.Title,
-        @event.StartAtUtc, @event.EndAtUtc, @event.Timezone, @event.VenueName,
-        @event.IsVirtual, @event.Capacity, @event.Price, @event.Status);
+    private async Task<EventResponse> ToResponseAsync(Event @event, CancellationToken ct)
+    {
+        var categories = await db.EventCategories
+            .Where(ec => ec.EventId == @event.EventId)
+            .Select(ec => new CategoryRef(ec.CategoryId, ec.Category.Name))
+            .ToListAsync(ct);
+
+        return new(
+            @event.EventId, @event.UmbracoContentKey, @event.Slug, @event.Title,
+            @event.StartAtUtc, @event.EndAtUtc, @event.Timezone, @event.VenueName,
+            @event.IsVirtual, @event.Capacity, @event.Price, @event.Status, categories);
+    }
 }
