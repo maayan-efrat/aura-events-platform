@@ -47,6 +47,7 @@ export function RegisterButton({
         return;
       }
       setStatus(data.status);
+      router.refresh(); // re-fetches the server-rendered availability count on this page
     } catch {
       setError("לא ניתן להתחבר לשרת. נסו שוב מאוחר יותר.");
     } finally {
@@ -65,6 +66,7 @@ export function RegisterButton({
         return;
       }
       setStatus("Cancelled");
+      router.refresh();
     } catch {
       setError("לא ניתן להתחבר לשרת. נסו שוב מאוחר יותר.");
     } finally {

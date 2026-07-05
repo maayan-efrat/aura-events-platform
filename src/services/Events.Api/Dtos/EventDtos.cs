@@ -2,6 +2,12 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Events.Api.Dtos;
 
+public record EventContentRequest(
+    [Required] string Summary,
+    [Required] string Description,
+    [Required] string SeoTitle,
+    [Required] string SeoDescription);
+
 public record CreateEventRequest(
     [Required] string Title,
     [Required] string Slug,
@@ -12,7 +18,8 @@ public record CreateEventRequest(
     bool IsVirtual,
     int? Capacity,
     string Status,
-    Guid? UmbracoContentKey);
+    Guid? UmbracoContentKey,
+    EventContentRequest? Content);
 
 public record EventResponse(
     Guid EventId,
@@ -25,7 +32,8 @@ public record EventResponse(
     string? VenueName,
     bool IsVirtual,
     int? Capacity,
-    string Status);
+    string Status,
+    string? UmbracoSyncError = null);
 
 public record AvailabilityResponse(Guid EventId, int? Capacity, int RegisteredCount, int WaitlistCount, string Status);
 

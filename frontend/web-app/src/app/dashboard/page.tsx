@@ -3,13 +3,7 @@ import { callEventsApiAsCurrentUser, getCurrentUser } from "@/lib/backend-fetch"
 import { getPublishedEventContent } from "@/lib/umbraco";
 import type { MyRegistration } from "@/lib/types";
 import { AiRecommendations } from "@/components/dashboard/AiRecommendations";
-
-const STATUS_LABELS: Record<MyRegistration["status"], string> = {
-  Registered: "רשום/ה",
-  Waitlisted: "ברשימת המתנה",
-  Cancelled: "בוטל",
-  CheckedIn: "בוצע צ׳ק-אין",
-};
+import { MyRegistrationRow } from "@/components/dashboard/MyRegistrationRow";
 
 export const metadata = { title: "האזור האישי — AuraEvents" };
 
@@ -24,6 +18,7 @@ export default async function DashboardPage() {
 
   const eventContent = await getPublishedEventContent().catch(() => []);
   const titleByEventId = new Map(eventContent.map((item) => [item.systemEventId, item.title]));
+  const slugByEventId = Object.fromEntries(eventContent.map((item) => [item.systemEventId, item.slug]));
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
@@ -39,29 +34,24 @@ export default async function DashboardPage() {
         ) : (
           <ul className="mt-4 divide-y divide-border rounded-2xl border border-border">
             {registrations.map((registration) => (
-              <li
+              <MyRegistrationRow
                 key={registration.registrationId}
-                className="flex items-center justify-between px-5 py-4"
-              >
-                <span className="text-sm text-foreground">
-                  {titleByEventId.get(registration.eventId) ?? registration.eventId}
-                </span>
-                <span className="text-sm font-medium text-muted-foreground">
-                  {STATUS_LABELS[registration.status]}
-                </span>
-              </li>
+                eventId={registration.eventId}
+                title={titleByEventId.get(registration.eventId) ?? registration.eventId}
+                initialStatus={registration.status}
+              />
             ))}
           </ul>
         )}
       </section>
 
-      <section className="mt-12">
+      <section id="recommendations" className="mt-12 scroll-mt-20">
         <h2 className="text-xl font-semibold text-foreground">המלצות מותאמות אישית</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           מבוסס על היסטוריית ההרשמות שלך ותחומי העניין שתשתפו.
         </p>
         <div className="mt-4">
-          <AiRecommendations />
+          <AiRecommendations slugByEventId={slugByEventId} />
         </div>
       </section>
     </div>

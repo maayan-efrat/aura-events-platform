@@ -5,6 +5,7 @@ import { login, type AuraUser } from "../lib/auth";
 export function LoginScreen({ onLoggedIn }: { onLoggedIn: (user: AuraUser) => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -32,17 +33,31 @@ export function LoginScreen({ onLoggedIn }: { onLoggedIn: (user: AuraUser) => vo
         placeholderTextColor="#a1a1aa"
         autoCapitalize="none"
         keyboardType="email-address"
+        autoComplete="email"
+        textContentType="emailAddress"
         value={email}
         onChangeText={setEmail}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="סיסמה"
-        placeholderTextColor="#a1a1aa"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+      <View style={styles.passwordRow}>
+        <TextInput
+          style={[styles.input, styles.passwordInput]}
+          placeholder="סיסמה"
+          placeholderTextColor="#a1a1aa"
+          secureTextEntry={!isPasswordVisible}
+          autoComplete="current-password"
+          textContentType="password"
+          value={password}
+          onChangeText={setPassword}
+        />
+        <Pressable
+          style={styles.passwordToggle}
+          onPress={() => setIsPasswordVisible((visible) => !visible)}
+          accessibilityRole="button"
+          accessibilityLabel={isPasswordVisible ? "הסתרת הסיסמה" : "הצגת הסיסמה"}
+        >
+          <Text style={styles.passwordToggleText}>{isPasswordVisible ? "הסתר" : "הצג"}</Text>
+        </Pressable>
+      </View>
 
       {error && <Text style={styles.error}>{error}</Text>}
 
@@ -73,7 +88,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textAlign: "right",
   },
-  error: { color: "#fb7185", marginBottom: 12, textAlign: "right" },
+  passwordRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
+  passwordInput: { flex: 1, marginBottom: 0 },
+  passwordToggle: { paddingHorizontal: 12, marginStart: 8 },
+  passwordToggleText: { color: "#a78bfa", fontWeight: "600", fontSize: 14 },
+  error: { color: "#fb7185", marginBottom: 12, marginTop: 12, textAlign: "right" },
   button: {
     height: 48,
     borderRadius: 999,
