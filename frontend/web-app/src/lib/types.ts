@@ -19,6 +19,7 @@ export interface EventDetail {
   venueName: string | null;
   isVirtual: boolean;
   capacity: number | null;
+  price: number | null;
   status: "Draft" | "Published" | "Cancelled" | "Completed";
 }
 
@@ -28,6 +29,8 @@ export interface LiveEventListing {
   title: string;
   summary: string;
   eventId: string;
+  startAtUtc: string | null;
+  price: number | null;
   availability: EventAvailability | null;
 }
 
@@ -57,6 +60,7 @@ export interface CreateEventPayload {
   venueName: string | null;
   isVirtual: boolean;
   capacity: number | null;
+  price: number | null;
   status: "Draft" | "Published";
   umbracoContentKey: string | null;
   content: EventContentPayload | null;

@@ -17,6 +17,7 @@ public record CreateEventRequest(
     string? VenueName,
     bool IsVirtual,
     int? Capacity,
+    decimal? Price,
     string Status,
     Guid? UmbracoContentKey,
     EventContentRequest? Content);
@@ -32,6 +33,7 @@ public record EventResponse(
     string? VenueName,
     bool IsVirtual,
     int? Capacity,
+    decimal? Price,
     string Status,
     string? UmbracoSyncError = null);
 

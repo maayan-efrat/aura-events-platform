@@ -25,6 +25,7 @@ export function NewEventForm() {
   const [venueName, setVenueName] = useState("");
   const [isVirtual, setIsVirtual] = useState(false);
   const [capacity, setCapacity] = useState("");
+  const [price, setPrice] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -69,6 +70,7 @@ export function NewEventForm() {
       venueName: isVirtual ? null : venueName || null,
       isVirtual,
       capacity: capacity ? Number(capacity) : null,
+      price: price ? Number(price) : null,
       status: "Published",
       umbracoContentKey: null,
       content,
@@ -193,13 +195,23 @@ export function NewEventForm() {
             <Input label="מקום האירוע" value={venueName} onChange={(event) => setVenueName(event.target.value)} />
           )}
 
-          <Input
-            label="קיבולת (אופציונלי)"
-            type="number"
-            min={1}
-            value={capacity}
-            onChange={(event) => setCapacity(event.target.value)}
-          />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input
+              label="קיבולת (אופציונלי)"
+              type="number"
+              min={1}
+              value={capacity}
+              onChange={(event) => setCapacity(event.target.value)}
+            />
+            <Input
+              label="מחיר בש״ח (ריק = כניסה חופשית)"
+              type="number"
+              min={0}
+              step="0.01"
+              value={price}
+              onChange={(event) => setPrice(event.target.value)}
+            />
+          </div>
         </fieldset>
 
         {result?.umbracoSyncError && (

@@ -1,7 +1,11 @@
-import { getEventAvailability } from "@/lib/backend-fetch";
+import { getEventAvailability, getEventById } from "@/lib/backend-fetch";
 import { getPublishedEventContent } from "@/lib/umbraco";
 import type { LiveEventListing } from "@/lib/types";
-import { Card, CardContent, CardDescription, CardFooter, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent, CardDescription, CardFooter, CardImage, CardTitle } from "@/components/ui/Card";
+import { EventCardVisual } from "@/components/events/EventCardVisual";
+
+const dateFormatter = new Intl.DateTimeFormat("he-IL", { dateStyle: "long", timeStyle: "short" });
+const priceFormatter = new Intl.NumberFormat("he-IL", { style: "currency", currency: "ILS", maximumFractionDigits: 0 });
 
 const STATUS_LABELS: Record<NonNullable<LiveEventListing["availability"]>["status"], string> = {
   Open: "מקומות פנויים",
@@ -21,12 +25,17 @@ async function loadLiveListings(): Promise<{ listings: LiveEventListing[]; using
 
     const listings = await Promise.all(
       content.map(async (item): Promise<LiveEventListing> => {
-        const availability = await getEventAvailability(item.systemEventId).catch(() => null);
+        const [availability, event] = await Promise.all([
+          getEventAvailability(item.systemEventId).catch(() => null),
+          getEventById(item.systemEventId).catch(() => null),
+        ]);
         return {
           slug: item.slug,
           title: item.title,
           summary: item.summary,
           eventId: item.systemEventId,
+          startAtUtc: event?.startAtUtc ?? null,
+          price: event?.price ?? null,
           availability,
         };
       }),
@@ -67,6 +76,9 @@ export async function EventListing() {
       {listings.map((listing) => (
         <li key={listing.eventId} className="list-none">
           <Card className="h-full">
+            <CardImage>
+              <EventCardVisual seed={listing.eventId} className="h-full w-full" />
+            </CardImage>
             <CardContent>
               {listing.availability && (
                 <span
@@ -77,6 +89,12 @@ export async function EventListing() {
               )}
               <CardTitle>{listing.title}</CardTitle>
               <CardDescription>{listing.summary}</CardDescription>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                {listing.startAtUtc && <span>{dateFormatter.format(new Date(listing.startAtUtc))}</span>}
+                <span className="font-semibold text-foreground">
+                  {listing.price ? priceFormatter.format(listing.price) : "כניסה חופשית"}
+                </span>
+              </div>
             </CardContent>
             <CardFooter>
               <span className="text-sm text-muted-foreground">

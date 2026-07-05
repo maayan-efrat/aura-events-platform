@@ -64,8 +64,8 @@ export function UserMenu({
           role="menu"
           className="absolute end-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-border bg-surface shadow-lg"
         >
-          <Link href="/dashboard" role="menuitem" className={itemClassName} onClick={() => setIsOpen(false)}>
-            האזור האישי
+          <Link href="/dashboard#my-events" role="menuitem" className={itemClassName} onClick={() => setIsOpen(false)}>
+            האירועים שלי
           </Link>
           {isOrganizer && (
             <Link href="/organizer/new-event" role="menuitem" className={itemClassName} onClick={() => setIsOpen(false)}>

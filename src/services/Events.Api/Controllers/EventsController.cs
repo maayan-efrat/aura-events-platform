@@ -53,6 +53,7 @@ public class EventsController(
             VenueName = request.VenueName,
             IsVirtual = request.IsVirtual,
             Capacity = request.Capacity,
+            Price = request.Price,
             Status = status,
             CreatedByUserId = Guid.Parse(User.FindFirstValue("sub")!),
             CreatedAtUtc = DateTimeOffset.UtcNow,
@@ -197,5 +198,5 @@ public class EventsController(
     private static EventResponse ToResponse(Event @event) => new(
         @event.EventId, @event.UmbracoContentKey, @event.Slug, @event.Title,
         @event.StartAtUtc, @event.EndAtUtc, @event.Timezone, @event.VenueName,
-        @event.IsVirtual, @event.Capacity, @event.Status);
+        @event.IsVirtual, @event.Capacity, @event.Price, @event.Status);
 }

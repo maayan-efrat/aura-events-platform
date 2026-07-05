@@ -108,11 +108,11 @@ export function Navbar() {
             <>
               <li>
                 <Link
-                  href="/dashboard"
+                  href="/dashboard#my-events"
                   onClick={() => setIsMenuOpen(false)}
                   className="block rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface-muted hover:text-foreground"
                 >
-                  האזור האישי
+                  האירועים שלי
                 </Link>
               </li>
               {isOrganizer && (

@@ -20,6 +20,7 @@ public class Event
     public string? VenueName { get; set; }
     public bool IsVirtual { get; set; }
     public int? Capacity { get; set; }
+    public decimal? Price { get; set; }
     public string Status { get; set; } = EventStatus.Draft;
     public Guid CreatedByUserId { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }

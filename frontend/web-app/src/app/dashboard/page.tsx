@@ -27,7 +27,7 @@ export default async function DashboardPage() {
       </h1>
       <p className="mt-1 text-muted-foreground">האזור האישי שלך ב-AuraEvents</p>
 
-      <section className="mt-10">
+      <section id="my-events" className="mt-10 scroll-mt-20">
         <h2 className="text-xl font-semibold text-foreground">האירועים שלי</h2>
         {registrations.length === 0 ? (
           <p className="mt-3 text-muted-foreground">עדיין לא נרשמת לאף אירוע.</p>
