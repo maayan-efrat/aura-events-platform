@@ -54,8 +54,26 @@ export interface LiveEventListing {
 export interface MyRegistration {
   registrationId: string;
   eventId: string;
+  eventTitle: string;
+  eventStartAtUtc: string;
+  eventEndAtUtc: string;
+  eventTimezone: string;
   status: "Registered" | "Waitlisted" | "Cancelled" | "CheckedIn";
   registeredAtUtc: string;
+  ticketCode: string;
+}
+
+/**
+ * POST /api/events/{eventId}/registrations response shape (Events.Api). qrSyncError is set when
+ * the registration itself succeeded but archiving the ticket QR in Umbraco Media failed — the
+ * ticket is still valid and displayable either way (GET .../registrations/me/qr regenerates the
+ * PNG on demand, it doesn't depend on the Umbraco copy).
+ */
+export interface RegistrationResponse {
+  registrationId: string;
+  eventId: string;
+  status: "Registered" | "Waitlisted" | "Cancelled" | "CheckedIn";
+  qrSyncError: string | null;
 }
 
 /** POST /api/events/ai/generate-description response shape — also what gets published to Umbraco. */

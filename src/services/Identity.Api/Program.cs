@@ -19,6 +19,9 @@ builder.Services.AddDbContext<IdentityDbContext>(options =>
 builder.Services.AddAuraEventsJwtAuthentication(builder.Configuration);
 builder.Services.AddScoped<ITokenService, TokenService>();
 
+builder.Services.AddSingleton(builder.Configuration.GetSection(UsersSyncOptions.SectionName).Get<UsersSyncOptions>()
+    ?? throw new InvalidOperationException($"Missing '{UsersSyncOptions.SectionName}' configuration section."));
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(NextJsCorsPolicy, policy =>

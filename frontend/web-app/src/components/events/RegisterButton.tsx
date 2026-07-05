@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import type { MyRegistration } from "@/lib/types";
 
@@ -35,6 +36,7 @@ export function RegisterButton({
   }
 
   const isActive = status === "Registered" || status === "Waitlisted" || status === "CheckedIn";
+  const qrUrl = `/api/events/${eventId}/register/qr`;
 
   async function handleRegister() {
     setError(null);
@@ -79,6 +81,15 @@ export function RegisterButton({
       {isActive ? (
         <>
           <p className="text-sm font-medium text-success">{STATUS_LABELS[status!]}</p>
+          {status !== "Waitlisted" && (
+            <div className="flex flex-col items-center gap-2 rounded-lg border border-border p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element -- authenticated same-origin proxy, not a static asset */}
+              <img src={qrUrl} alt="כרטיס כניסה (QR)" className="h-40 w-40" />
+              <Link href={`/tickets/${eventId}`} target="_blank" className="text-sm text-primary underline">
+                צפייה בכרטיס המלא / הדפסה
+              </Link>
+            </div>
+          )}
           <Button variant="outline" isLoading={isSubmitting} onClick={handleCancel}>
             ביטול הרשמה
           </Button>
