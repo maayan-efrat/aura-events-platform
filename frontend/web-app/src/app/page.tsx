@@ -2,8 +2,18 @@ import { Suspense } from "react";
 import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/home/Hero";
 import { EventListing } from "@/components/events/EventListing";
+import { EventListingSkeleton } from "@/components/events/EventListingSkeleton";
 
-export default function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ categoryId?: string | string[] }>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const categoryId = Array.isArray(resolvedSearchParams.categoryId)
+    ? resolvedSearchParams.categoryId[0]
+    : resolvedSearchParams.categoryId;
+
   return (
     <div className="flex flex-1 flex-col">
       <Hero />
@@ -18,10 +28,8 @@ export default function Home() {
           </p>
         </div>
 
-        <Suspense
-          fallback={<p className="text-center text-muted-foreground">טוען אירועים...</p>}
-        >
-          <EventListing />
+        <Suspense fallback={<EventListingSkeleton />}>
+          <EventListing categoryId={categoryId} />
         </Suspense>
       </section>
 

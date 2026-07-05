@@ -56,3 +56,27 @@ export function zonedTimeToUtcIso(localDateTimeValue: string, timeZone: string):
 
   return new Date(finalMs).toISOString();
 }
+
+/**
+ * Converts a UTC ISO string into a `<input type="datetime-local">` value (e.g. "2026-08-15T18:00")
+ * representing the wall-clock time in `timeZone` — the inverse of zonedTimeToUtcIso, used to
+ * pre-fill the edit-event form with the event's existing start/end times.
+ */
+export function utcIsoToZonedTimeValue(utcIso: string, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+    .formatToParts(new Date(utcIso))
+    .reduce<Record<string, string>>((acc, part) => {
+      acc[part.type] = part.value;
+      return acc;
+    }, {});
+
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}

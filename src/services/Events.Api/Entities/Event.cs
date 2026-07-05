@@ -27,4 +27,5 @@ public class Event
     public DateTimeOffset? UpdatedAtUtc { get; set; }
 
     public List<EventRegistration> Registrations { get; set; } = [];
+    public List<EventCategory> EventCategories { get; set; } = [];
 }

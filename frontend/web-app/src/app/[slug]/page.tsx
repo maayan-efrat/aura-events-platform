@@ -41,7 +41,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
       <div className="overflow-hidden rounded-2xl">
-        <EventCardVisual seed={content.systemEventId} className="aspect-[21/9] w-full" />
+        <EventCardVisual seed={content.systemEventId} imageUrl={content.heroImageUrl} className="aspect-[21/9] w-full" />
       </div>
 
       <span className="mt-6 inline-flex w-fit items-center rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
