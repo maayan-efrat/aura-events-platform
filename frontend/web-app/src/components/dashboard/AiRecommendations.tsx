@@ -46,15 +46,15 @@ export function AiRecommendations({ slugByEventId }: { slugByEventId: Record<str
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <input
-          type="text"
+      <div className="flex flex-col gap-3">
+        <textarea
           value={preferences}
           onChange={(event) => setPreferences(event.target.value)}
           placeholder="ספרו לנו על תחומי עניין (לדוגמה: AI, עיצוב, נטוורקינג)..."
-          className="h-11 flex-1 rounded-xl border border-border bg-surface px-4 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-primary"
+          rows={3}
+          className="w-full resize-y rounded-xl border border-border bg-surface px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-primary"
         />
-        <Button onClick={handleGetRecommendations} isLoading={isLoading} className="shrink-0">
+        <Button onClick={handleGetRecommendations} isLoading={isLoading} className="self-start">
           קבלו המלצות AI
         </Button>
       </div>

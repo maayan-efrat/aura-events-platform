@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { UserMenu } from "@/components/layout/UserMenu";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
@@ -48,23 +49,7 @@ export function Navbar() {
 
         <div className="hidden items-center gap-3 md:flex">
           {user ? (
-            <>
-              <Link href="/dashboard" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-                האזור האישי
-              </Link>
-              {isOrganizer && (
-                <Link href="/organizer/new-event" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-                  ניהול אירועים
-                </Link>
-              )}
-              <Link href="/settings" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-                הגדרות
-              </Link>
-              <span className="text-sm text-muted-foreground">שלום, {user.firstName}</span>
-              <Button variant="outline" size="sm" onClick={() => logout()}>
-                התנתקות
-              </Button>
-            </>
+            <UserMenu user={user} isOrganizer={isOrganizer} onLogout={() => logout()} />
           ) : (
             <>
               <Button variant="ghost" size="sm" onClick={() => router.push("/login")}>
