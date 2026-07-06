@@ -15,6 +15,7 @@ const FOOTER_COLUMNS = [
       { href: "#about", label: "אודות" },
       { href: "#careers", label: "קריירה" },
       { href: "#contact", label: "צור קשר" },
+      { href: "/tech-stack", label: "הסטאק הטכנולוגי" },
     ],
   },
   {
