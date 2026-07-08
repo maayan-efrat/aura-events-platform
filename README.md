@@ -5,7 +5,7 @@ AuraEvents is a high-performance, enterprise-grade event management platform eng
 The system leverages **PostgreSQL** as its transactional backbone, features a secure **RS256 JWT Distributed Authentication** model, and seamlessly integrates the **OpenAI SDK** for structured, hallucination-proof AI recommendations and automated content optimization.
 
 📺 Watch the project demo on YouTube:
-[![AuraEvents Demo Video](https://img.youtube.com/vi/G3sqo8Nu6gQ/0.jpg)](https://www.youtube.com/watch?v=G3sqo8Nu6gQ)
+[![AuraEvents Demo Video](https://img.youtube.com/vi/G3sqo8Nu6gQ/0.jpg)](https://www.youtube.com/watch?v=G3sqo8Nu6gQ&utm_source=github)
 ---
 
 ## 🏗️ System Architecture & Topology
